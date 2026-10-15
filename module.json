@@ -1,0 +1,17 @@
+{
+  "id": "rts-combat-grid",
+  "title": "RTS Combat Grid · SWADE",
+  "description": "An RTS command grid for SWADE, opened by right-clicking a token, with customizable actor layouts and CoH II and SC II themes.",
+  "version": "0.1.0",
+  "authors": [{"name": "UmutcanOrug"}],
+  "compatibility": {"minimum": "13.339", "verified": "13", "maximum": "13"},
+  "relationships": {"systems": [{"id": "swade", "type": "system", "compatibility": {"minimum": "5.0.0"}}]},
+  "esmodules": ["scripts/main.mjs"],
+  "styles": ["styles/grid.css"],
+  "url": "https://github.com/UmutcanOrug/rts-combat-grid",
+  "manifest": "https://github.com/UmutcanOrug/rts-combat-grid/releases/latest/download/module.json",
+  "download": "https://github.com/UmutcanOrug/rts-combat-grid/releases/download/v0.1.0/rts-combat-grid-v0.1.0.zip",
+  "readme": "https://github.com/UmutcanOrug/rts-combat-grid/blob/main/README.md",
+  "bugs": "https://github.com/UmutcanOrug/rts-combat-grid/issues",
+  "changelog": "https://github.com/UmutcanOrug/rts-combat-grid/releases"
+}
