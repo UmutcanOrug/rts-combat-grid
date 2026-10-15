@@ -24,15 +24,15 @@ The default 5 × 3 grid uses this arrangement. Every slot can be reassigned, cle
 | --- | --- | --- | --- | --- | --- |
 | Row 1 | 1st Weapon | Prone | Movement | Skills | Attributes |
 | Row 2 | 2nd Weapon | Run | Use Item | Status | Powers |
-| Row 3 | Sidearm | Custom item | Custom item | Custom item | Custom item |
+| Row 3 | 3rd Weapon | Custom item | Custom item | Custom item | Custom item |
 
-Automatic weapon slots prefer equipped weapons. The sidearm slot recognizes pistol, handgun, revolver, and sidearm names/categories, or falls back to the third weapon. Assign a specific actor item to override this choice. The small weapon icon in the header opens the full weapon list.
+**All Weapons** (crossed weapons in the header) opens **Weapon Loadout** with three selectors: 1st Weapon, 2nd Weapon, and 3rd Weapon. Choose any owned weapon, Automatic, or Empty, then Save Loadout. This updates the three left-hand Base slots and saves the assignments with the layout. Automatic mode prefers equipped weapons and recognizes a pistol/sidearm for the third slot.
 
 The four bottom slots start empty for grenades, consumables, macros, or any other commands. Drag actor items onto them or Shift-click to assign an entry. **Use Item** lists available gear and consumables; cards retain the system's normal use controls. The grid does not invent or automatically spend consumable quantities.
 
 **Actions** is always visible in the header. It lists actor Action items, additional weapon/power actions, available Aim/Defend/Hold/Wild Attack statuses, and Support/Test and recovery roll shortcuts. **Browse Action Library** finds accessible Action items in world items and installed Item compendiums. Using a library entry explicitly adds a copy to this actor and opens it in SWADE Tools. Rules content is supplied by your installed SWADE content; this module does not bundle rulebook Action items.
 
-The header also includes Spend a Benny and Effects. Click the portrait to open the character sheet. Base and any custom page tabs share the header; there is no duplicate Sheet/Target toolbar or instructional footer.
+**Shaken** is a dedicated toggle in the portrait corner. It shows whether Shaken is active and leaves all four custom item slots available. The header also includes Spend a Benny and Effects. Click the portrait to open the character sheet. Base and any custom page tabs share the header; there is no duplicate Sheet/Target toolbar or instructional footer.
 
 ## Five themes
 
@@ -50,7 +50,26 @@ The header also includes Spend a Benny and Effects. Click the portrait to open t
 
 ![Desert](previews/desert-panel.png)
 
-The editor includes 20 game icons and 15 original command icons. Choose your own images, background, portrait, transparent button frame, accent color, and button labels. Each actor can use a different theme; the GM sets the default for new actors. See [asset sources](assets/SOURCES.md).
+Command icons follow the selected theme: CoH II uses extracted in-game command tiles; SC II uses actual extracted StarCraft II command and ability icons. Run uses the Charge legs icon; Movement uses the Move arrow, and Use Item uses Stimpack. Desert follows CoH II; Ironclad and Arcane follow SC II. Use **Command icon set** to override this choice, or assign a custom icon to an individual slot. The icon library also retains the original extracted unit and ability images. Choose your own images, background, portrait, transparent button frame, accent color, and button labels. Each actor can use a different theme; the GM sets the default for new actors. See [asset sources](assets/SOURCES.md).
+
+## NPC defaults and Token Configuration
+
+An unlinked Extra has its own synthetic actor. Editing its grid saves that token's layout; it does not automatically update the world actor or its prototype token.
+
+For reusable NPCs, configure one token, then choose either:
+
+- **Panel Settings → Save as NPC Default**, which saves the edited panel and the reusable default together.
+- **Token Configuration → Identity → RTS Combat Grid → Save as NPC Default**. The same section is available in Prototype Token Configuration. If a token of this actor is open in the grid, its displayed layout is the source.
+
+This GM-only command saves the layout to the base actor and its prototype token. New linked and unlinked tokens from that actor inherit it. The base actor keeps a separate portable default, so using Foundry's Assign Token does not erase the module's fallback. Weapon and item bindings can be matched after item IDs change. Assigned items that only exist on the source Extra are copied to the base actor; existing actor items are not rewritten. Wounds, resources, permissions, and token linking are not copied or changed.
+
+Existing Extras keep their own edited layouts. In their Token Configuration, click **Use NPC Default** to replace this token's layout with the saved default. Save a new NPC default whenever you want later tokens to use a revised layout.
+
+## Choice windows and positioning
+
+Skill, attribute, Action, power, item, status, and effect windows use a searchable, scrollable list of clickable rows. Select a row and click Use. Arrow keys move between visible entries; search filters the list. These windows use styling consistent with SWADE Tools and avoid the host's fixed-height native select listbox.
+
+The grid launcher is the **first button in the token HUD's left column**. The panel also starts on the left side of the screen. A manually saved panel position is retained; use Panel Settings → Reset position to return to the new left default. Argon can remain enabled or be disabled independently.
 
 ## Wounds
 
@@ -105,7 +124,7 @@ Status toggles actual actor conditions. Effects enables/disables editable active
 
 ## Validation
 
-Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports.
+Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation, portable NPC defaults, item-ID rebinding, token-only assigned items, and GM permissions. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports. Additional checks cover theme-specific command icons, the dedicated Shaken toggle, selecting all entries in a long choice list, three-weapon assignment, and NPC default controls.
 
 Browser checks use a simulated Foundry/SWADE Tools host. API signatures were checked against local Foundry V13, SWADE 5.0.8, and the author's SWADE Tools 2.2.2 source. A live Foundry world is still needed to verify real dice dialogs and interaction with other enabled modules. Foundry V14 is outside this release's scope.
 
