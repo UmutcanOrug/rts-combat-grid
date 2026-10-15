@@ -20,13 +20,13 @@ await page.route('http://rts-preview.test/**',async route=>{
 await page.goto('http://rts-preview.test');
 async function check(name,fn){await fn();console.log('PASS '+name);}
 const assert=(value,message)=>{if(!value)throw new Error(message);};
-async function choose(label){if(label)await page.locator('dialog select[name="entry"]').selectOption({label});await page.locator('dialog button[value="use"]').click();await page.waitForSelector('dialog',{state:'detached'});}
+async function choose(label){if(label)await page.getByRole('option',{name:label,exact:true}).click();await page.locator('dialog button[value="use"]').click();await page.waitForSelector('dialog',{state:'detached'});}
 async function loaded(){await page.waitForFunction(()=>Array.from(document.querySelectorAll('#rts-combat-grid img')).every(i=>i.complete && i.naturalWidth>0));}
 await check('right-click only reveals the launcher; icon opens compact Base',async()=>{
  await page.locator('#unit').click({button:'right'});assert(await page.locator('#rts-combat-grid').count()===0,'right click must not open panel');await page.locator('.rcg-launcher').click();await page.waitForSelector('#rts-combat-grid');await loaded();
- assert(await page.locator('.rcg-slot').count()===15,'15 slots');assert(await page.locator('[data-page]').count()===1,'single Base');assert(await page.locator('.rcg-header [data-page="0"]').textContent()==='Base','Base in header');assert(await page.locator('.rcg-footer,.rcg-command-strip,.rcg-header-title,[data-command="target"],[data-command="sheet"]').count()===0,'no redundant text or controls');
- assert(await page.locator('[data-slot="0"]').getAttribute('aria-label')==='1st Weapon','primary');assert(await page.locator('[data-slot="5"]').getAttribute('aria-label')==='2nd Weapon','secondary');assert(await page.locator('[data-slot="10"]').getAttribute('aria-label')==='Sidearm','sidearm');assert(await page.locator('.rcg-slot.empty').count()===4,'4 custom slots');
- const box=await page.locator('#rts-combat-grid').boundingBox();assert(box.height<325 && box.width<520,'compact dimensions '+JSON.stringify(box));
+ assert(await page.locator('.rcg-slot').count()===15,'15 slots');assert(await page.locator('#token-hud .col.left > :first-child').getAttribute('aria-label')==='RTS Combat Grid','launcher top left');assert(await page.locator('#token-hud .col.right .rcg-launcher').count()===0,'no right launcher');assert(await page.locator('[data-page]').count()===1,'single Base');assert(await page.locator('.rcg-header [data-page="0"]').textContent()==='Base','Base in header');assert(await page.locator('.rcg-footer,.rcg-command-strip,.rcg-header-title,[data-command="target"],[data-command="sheet"]').count()===0,'no redundant text or controls');
+ assert(await page.locator('[data-slot="0"]').getAttribute('aria-label')==='1st Weapon','primary');assert(await page.locator('[data-slot="5"]').getAttribute('aria-label')==='2nd Weapon','secondary');assert(await page.locator('[data-slot="10"]').getAttribute('aria-label')==='3rd Weapon','sidearm');assert(await page.locator('.rcg-slot.empty').count()===4,'4 custom slots');
+ const box=await page.locator('#rts-combat-grid').boundingBox();assert(box.height<325 && box.width<520,'compact dimensions '+JSON.stringify(box));assert(box.x<150,'default panel left');
 });
 await check('all player roll buttons delegate to SWADE Tools',async()=>{
  await page.evaluate(()=>game.user.isGM=false);
@@ -35,6 +35,18 @@ await check('all player roll buttons delegate to SWADE Tools',async()=>{
  await page.locator('[data-slot="4"]').click();await choose('Vigor · d6');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools attribute' && c.args[0]==='vigor'));
  await page.locator('[data-slot="6"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools run'));
  await page.locator('[data-slot="9"]').click();await choose('Energy Bolt');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='bolt'));
+});
+await check('searchable choice list scrolls and selects every entry despite host select height',async()=>{
+ await page.evaluate(()=>{for(let i=0;i<30;i++)preview.items.set('skill-'+i,{id:'skill-'+i,name:'Extra Skill '+i,type:'skill',isOwner:true,system:{die:{sides:6}}});});
+ await page.locator('[data-slot="3"]').click();const list=page.locator('.rcg-entry-list');assert(await list.evaluate(el=>el.scrollHeight>el.clientHeight),'long list scrolls');assert(await page.locator('dialog select[size]').count()===0,'no compressed select list');await page.locator('dialog [data-search]').fill('Extra Skill 29');await choose('Extra Skill 29 · d6');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools skill' && c.args[0]==='skill-29'));
+ await page.evaluate(()=>{for(let i=0;i<30;i++)preview.items.delete('skill-'+i);});
+});
+await check('Shaken toggles directly from the portrait without using an item slot',async()=>{
+ assert(await page.locator('[data-command="shaken"]').count()===1,'dedicated Shaken');await page.locator('[data-command="shaken"]').click();assert(await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken enabled');await page.locator('[data-command="shaken"]').click();assert(!await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken cleared');assert(await page.locator('.rcg-slot.empty').count()===4,'custom slots kept');
+});
+await check('All weapons assigns three persistent Base weapon slots',async()=>{
+ await page.locator('[data-command="weapons"]').click();await page.locator('dialog select[name="primary"]').selectOption('mg');await page.locator('dialog select[name="secondary"]').selectOption('rifle');await page.locator('dialog select[name="sidearm"]').selectOption('smg');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});assert(await page.evaluate(()=>preview.actor.flags['rts-combat-grid'].grid.loadout.primary)==='mg','saved weapon');await page.locator('[data-slot="0"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='mg'));
+ await page.locator('[data-command="weapons"]').click();await page.locator('dialog select[name="primary"]').selectOption('rifle');await page.locator('dialog select[name="secondary"]').selectOption('mortar');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});
 });
 await check('SWADE Action items are visible and use the Tools action dialog',async()=>{
  await page.locator('[data-command="actions"]').click();await choose('Grapple');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools action' && c.args[0]==='act'));
@@ -63,7 +75,7 @@ await check('player can drag grenades and consumables into bottom custom slots',
 await check('all five themes render and retain the same compact controls',async()=>{
  for(const theme of ['coh2','sc2','ironclad','arcane','desert']){
  await page.evaluate(async theme=>{const c=preview.main.grid.config;c.theme=theme;c.portrait=theme==='sc2'?'modules/rts-combat-grid/assets/sc2/marine.webp':'';await preview.actor.setFlag('rts-combat-grid','grid',c);},theme);await loaded();await page.locator('#rts-combat-grid').screenshot({path:path.join(out,`${theme}-panel.png`)});
- assert(await page.locator(`.theme-${theme} .rcg-slot`).count()===15,theme);
+ assert(await page.locator(`.theme-${theme} .rcg-slot`).count()===15,theme);const icon=await page.locator('[data-slot="2"] .rcg-slot-icon').getAttribute('src');assert(icon.includes(theme==='coh2' || theme==='desert' ? '/coh2/command-movement.webp' : '/sc2/move.webp'),'theme command icon '+theme);
  }
 });
 await check('Movement voice macro triggers once on this user next moving this token',async()=>{
@@ -72,6 +84,9 @@ await check('Movement voice macro triggers once on this user next moving this to
  await page.evaluate(()=>{preview.token.document.x=150;Hooks.callAll('updateToken',preview.token.document,{x:150},{},'other-user');});assert(await page.evaluate(()=>preview.calls.filter(c=>c.name==='Macro').length)===0,'ignore another user');
  await page.evaluate(()=>{preview.token.document.x=200;Hooks.callAll('updateToken',preview.token.document,{x:200},{},game.user.id);});await page.waitForFunction(()=>preview.calls.filter(c=>c.name==='Macro').length===1);
  await page.evaluate(()=>{preview.token.document.x=250;Hooks.callAll('updateToken',preview.token.document,{x:250},{},game.user.id);});assert(await page.evaluate(()=>preview.calls.filter(c=>c.name==='Macro').length)===1,'one shot');
+});
+await check('GM can save the current NPC layout from Token Configuration',async()=>{
+ await page.evaluate(()=>{game.user.isGM=true;const root=document.createElement('section');root.id='test-token-config';root.innerHTML='<div class="window-content"><div class="tab" data-tab="identity"></div></div>';document.body.append(root);Hooks.callAll('renderTokenConfig',{document:preview.token.document,isPrototype:false},root);});await page.locator('#test-token-config [data-save-default]').click();await page.waitForFunction(()=>Boolean(preview.actor.flags['rts-combat-grid'].defaultGrid));assert(await page.evaluate(()=>preview.actor.prototypeToken.flags['rts-combat-grid'].defaultGrid.grid.loadout.primary)==='rifle','prototype carries default');await page.evaluate(()=>document.getElementById('test-token-config').remove());
 });
 await check('appearance editor, import and slot dragging persist',async()=>{
  await page.locator('[data-ui="settings"]').click();await page.locator('dialog textarea[name="pages"]').fill('   ');await page.locator('dialog button[value="save"]').click();assert(await page.locator('dialog[open]').count()===1,'invalid save keeps editor');await page.locator('dialog textarea[name="pages"]').fill('Base');await page.locator('dialog input[name="columns"]').fill('4');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});assert(await page.locator('.rcg-slot').count()===12,'shrink');
