@@ -1,4 +1,4 @@
-import {canUse, ITEM_ACTIONS, loadoutItem, woundView} from "./core.mjs";
+import {canUse, ITEM_ACTIONS, loadoutItem, woundView, readConfig} from "./core.mjs";
 import {swadeTools,useToolsItem} from "./tools-bridge.mjs";
 import {chooseItems,chooseSkills,chooseAttribute,chooseActions,chooseStatus,chooseEffects,showHelp} from "./menus.mjs";
 
@@ -25,7 +25,7 @@ export async function executeSlot(slot,token,event,runtime=globalThis) {
   assertControl(token,runtime);
   const actor=token.actor;
   if(slot.kind === "item" || slot.kind === "loadout") {
-    const item=slot.kind === "loadout" ? loadoutItem(actor,slot.ref) : actor.items.get(slot.ref);
+    const item=slot.kind === "loadout" ? loadoutItem(actor,slot.ref,readConfig(actor,"coh2",token.document)) : actor.items.get(slot.ref);
     if(!item || !item.isOwner)throw new Error("The item is missing or you do not have permission to use it.");
     return useToolsItem(item,token,slot.action || "attack",event,runtime);
   }
@@ -43,12 +43,13 @@ export async function executeSlot(slot,token,event,runtime=globalThis) {
       if(!runtime.game.user.isGM)throw new Error("Only the GM can grant Bennies.");
       return actor.getBenny();
     case "prone":return actor.toggleStatusEffect("prone");
+    case "shaken":return actor.toggleStatusEffect("shaken");
     case "movement":
       if(slot.macro && (!runtime.game.macros?.get(slot.macro) || runtime.game.macros.get(slot.macro).canExecute === false))throw new Error("Choose a movement macro you can execute.");
       token.control?.({releaseOthers:true});
       await runtime.ui.controls.activate({control:"tokens",tool:"select"});
       return {movement:true,macro:slot.macro || ""};
-    case "weapons":return chooseItems(token,"weapon",runtime);
+    case "weapons":return {loadout:true};
     case "powers":return chooseItems(token,"power",runtime);
     case "items":return chooseItems(token,"item",runtime);
     case "skills":return chooseSkills(token,runtime);

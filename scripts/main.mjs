@@ -1,7 +1,8 @@
 import {ID, THEMES, readConfig, normalizeConfig, insertSlot, moveSlot, itemSlot, loadoutItem, canUse, cssImage, escape as e} from "./core.mjs";
 import {executeSlot,executeMacro,adjustWounds,itemActions} from "./actions.mjs";
 import {renderPanel} from "./view.mjs";
-import {editAppearance,editSlot} from "./editor.mjs";
+import {editAppearance,editSlot,editWeaponLoadout} from "./editor.mjs";
+import {addTokenConfigControls} from "./presets.mjs";
 
 export class CombatGrid {
   token=null; config=null; page=0; editing=false; pinned=false; element=null; busy=false; menu=null; movement=null; saveChain=Promise.resolve();
@@ -17,7 +18,7 @@ export class CombatGrid {
     if(!game.settings.get(ID,"enabled") || game.system.id !== "swade" || !canUse(token,game.user)) return;
     if(this.pinned && this.token !== token && !force) return;
     const changed=this.token?.document.uuid !== token.document.uuid;
-    this.token=token;this.config=readConfig(token.actor,game.settings.get(ID,"theme"));
+    this.token=token;this.config=readConfig(token.actor,game.settings.get(ID,"theme"),token.document);
     if(changed){this.page=0;this.editing=false;this.pinned=false;this.movement=null;}
     this.page=Math.min(this.page,this.config.pages.length-1);
     if(!this.element){
@@ -44,7 +45,7 @@ export class CombatGrid {
     this.clampPosition();
   }
   close(){this.element?.remove();this.element=null;this.token=null;this.pinned=false;this.editing=false;this.movement=null;this.closeMenu();}
-  refresh(){if(this.token){this.config=readConfig(this.token.actor,game.settings.get(ID,"theme"));this.page=Math.min(this.page,this.config.pages.length-1);this.render();}}
+  refresh(){if(this.token){this.config=readConfig(this.token.actor,game.settings.get(ID,"theme"),this.token.document);this.page=Math.min(this.page,this.config.pages.length-1);this.render();}}
   async saveConfig(config,token=this.token) {
     if(!canUse(token,game.user))throw new Error("You do not have permission to save this layout.");
     const normalized=normalizeConfig(config);
@@ -63,6 +64,7 @@ export class CombatGrid {
     if(this.busy)return;this.busy=true;button?.classList.add("busy");
     try {
       const token=this.token,result=await executeSlot(slot,token,event);
+      if(result?.loadout && this.token === token)await editWeaponLoadout(this);
       if(result?.movement && this.token === token) {
         this.movement={token,macro:result.macro,from:{x:token.document.x,y:token.document.y}};
         Hooks.callAll("rtsCombatGridMovementArmed",{actor:token.actor,token,tokenDocument:token.document});
@@ -146,7 +148,7 @@ export class CombatGrid {
   }
   showMenu(index,button) {
     this.closeMenu();const slot=this.config.pages[this.page]?.slots[index];
-    const item=slot?.kind === "loadout" ? loadoutItem(this.token.actor,slot.ref) : slot?.kind === "item" ? this.token.actor.items.get(slot.ref) : null;
+    const item=slot?.kind === "loadout" ? loadoutItem(this.token.actor,slot.ref,this.config) : slot?.kind === "item" ? this.token.actor.items.get(slot.ref) : null;
     const menu=document.createElement("div");menu.className="rcg-context";menu.setAttribute("role","menu");
     menu.innerHTML=`<strong>${e(slot?.label || item?.name || "Button")}</strong>${itemActions(item).map(action=>`<button type="button" role="menuitem" data-item-action="${e(action.ref)}">${e(action.label)}</button>`).join("")}<button type="button" role="menuitem" data-edit-slot>✎ Edit button</button>`;
     const rect=button.getBoundingClientRect();menu.style.left=`Math.min(rect.left,innerWidth-210)}px`;menu.style.top=`${Math.max(8,rect.top-10)}px`;
@@ -198,18 +200,20 @@ Hooks.once("ready",()=>{
 Hooks.on("renderTokenHUD",(hud,html)=>{
   if(!grid || !canUse(hud.object,game.user) || !game.settings.get(ID,"enabled"))return;
   const root=html instanceof HTMLElement ? html : html?.[0];
-  const column=root?.querySelector(".col.right") ?? root;
-  if(column && !column.querySelector(".rcg-launcher")){
+  const column=root?.querySelector(".col.left") ?? root;
+  root?.querySelectorAll(".rcg-launcher").forEach(button=>button.remove());
+  if(column){
     const token=hud.object, button=document.createElement("button");button.type="button";button.className="control-icon rcg-launcher";button.title="RTS Combat Grid";button.setAttribute("aria-label","RTS Combat Grid");button.innerHTML='<i class="fa-solid fa-table-cells"></i>';
-    button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();if(grid.element && grid.token?.document.uuid === token.document.uuid)grid.close();else grid.open(token,{force:true});});column.append(button);
+    button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();if(grid.element && grid.token?.document.uuid === token.document.uuid)grid.close();else grid.open(token,{force:true});});column.prepend(button);
   }
 });
 Hooks.on("controlToken",(token,controlled)=>{if(grid?.element && controlled && game.settings.get(ID,"follow") && !grid.pinned)grid.open(token);});
 for(const hook of ["updateActor","updateItem","createItem","deleteItem","createActiveEffect","updateActiveEffect","deleteActiveEffect"]){
-  Hooks.on(hook,document=>{const actor=document.documentName === "Actor" ? document : document.parent;if(grid?.token && actor?.uuid === grid.token.actor.uuid)grid.refresh();});
+  Hooks.on(hook,document=>{const actor=document.documentName === "Actor" ? document : document.parent;if(grid?.token && (actor?.uuid === grid.token.actor.uuid || actor?.uuid === grid.token.document.baseActor?.uuid))grid.refresh();});
 }
 Hooks.on("updateToken",(document,changed,options,userId)=>{if(grid?.token?.document.uuid===document.uuid){void grid.onMovement(document,changed ?? {},userId);grid.refresh();}});
 Hooks.on("deleteToken",document=>{if(grid?.token?.document.uuid===document.uuid)grid.close();});
 Hooks.on("deleteActor",actor=>{if(grid?.token?.actor.uuid===actor.uuid)grid.close();});
 Hooks.on("updateUser",user=>{if(user.id===game.user.id)grid?.refresh();});
 Hooks.on("canvasTearDown",()=>grid?.close());
+for(const hook of ["renderTokenConfig","renderPrototypeTokenConfig"])Hooks.on(hook,(app,html)=>addTokenConfigControls(app,html,grid));

@@ -5,15 +5,17 @@ function check(token,runtime) {
   if(!canUse(token,runtime.game.user))throw new Error("You do not have permission to control this token.");
   if(runtime.game.paused && !runtime.game.user.isGM)throw new Error("The game is paused.");
 }
-const wait=(runtime,options)=>runtime.foundry.applications.api.DialogV2.wait({classes:["rcg-dialog"],position:{width:480},rejectClose:false,...options});
+const wait=(runtime,options)=>runtime.foundry.applications.api.DialogV2.wait({classes:["rcg-dialog","rcg-tools-dialog"],position:{width:480},rejectClose:false,...options});
 export async function chooseEntry(title,entries,runtime=globalThis,{empty="No entries are available on this actor.",intro="Choose an entry to continue."}={}) {
-  const result=await wait(runtime,{window:{title},content:`<p class="rcg-note">${e(intro)}</p>${entries.length ? `<label class="rcg-field"><span>Search</span><input type="search" data-search autocomplete="off"></label><label class="rcg-field"><span>Available entries</span><select name="entry" size="${Math.min(10,Math.max(3,entries.length))}">${entries.map((entry,i)=>`<option value="${i}" ${i===0 ? "selected" : ""}>${e(entry.label)}</option>`).join("")}</select></label>` : `<p>${e(empty)}</p>`}`,
+  const result=await wait(runtime,{window:{title},content:`<p class="rcg-note">${e(intro)}</p>${entries.length ? `<label class="rcg-field"><span>Search</span><input type="search" data-search autocomplete="off" placeholder="Filter entries…"></label><input type="hidden" name="entry" value="0"><div class="rcg-entry-list" role="listbox" aria-label="Available entries">${entries.map((entry,i)=>`<button type="button" role="option" class="rcg-entry ${i===0 ? "selected" : ""}" aria-selected="${i===0}" data-entry="${i}"><span>${e(entry.label)}</span><i aria-hidden="true">›</i></button>`).join("")}</div><p class="rcg-no-matches" hidden>No matching entries.</p>` : `<p>${e(empty)}</p>`}`,
     buttons:[...(entries.length ? [{action:"use",label:"Use",default:true,callback:(_ev,_button,app)=>{
       const selected=app.element.querySelector('[name="entry"]').value;
       return selected === "" ? null : {entry:entries[Number(selected)]};
     }}] : []),{action:"cancel",label:"Close"}],render:(_ev,app)=>{
-      const search=app.element.querySelector("[data-search]"),select=app.element.querySelector('[name="entry"]');
-      search?.addEventListener("input",()=>{const query=search.value.toLowerCase();for(const option of select.options)option.hidden=!option.textContent.toLowerCase().includes(query);select.value=Array.from(select.options).find(option=>!option.hidden)?.value ?? "";});
+      const root=app.element,search=root.querySelector("[data-search]"),selected=root.querySelector('[name="entry"]'),buttons=Array.from(root.querySelectorAll("[data-entry]"));
+      const select=button=>{if(!selected)return;selected.value=button?.dataset.entry ?? "";for(const option of buttons){const active=option === button;option.classList.toggle("selected",active);option.setAttribute("aria-selected",String(active));}};
+      for(const button of buttons){button.addEventListener("click",()=>select(button));button.addEventListener("keydown",event=>{if(!["ArrowDown","ArrowUp","Home","End"].includes(event.key))return;event.preventDefault();const visible=buttons.filter(b=>!b.hidden),index=visible.indexOf(button);const next=event.key === "Home" ? visible[0] : event.key === "End" ? visible.at(-1) : visible[Math.max(0,Math.min(visible.length-1,index+(event.key === "ArrowDown" ? 1 : -1)))];select(next);next?.focus();});}
+      search?.addEventListener("input",()=>{const query=search.value.toLowerCase();for(const button of buttons)button.hidden=!entries[Number(button.dataset.entry)].label.toLowerCase().includes(query);const visible=buttons.filter(button=>!button.hidden);select(visible[0]);root.querySelector(".rcg-no-matches").hidden=Boolean(visible.length);});
     }});
   return result?.entry ?? null;
 }
