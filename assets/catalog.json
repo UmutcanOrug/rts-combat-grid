@@ -80,63 +80,87 @@
     "name": "SC II \u00b7 Marine"
   },
   {
-    "name": "Command: weapons",
-    "path": "commands/weapons.svg"
+    "name": "CoH II Command: Movement",
+    "path": "coh2/command-movement.webp"
   },
   {
-    "name": "Command: prone",
-    "path": "commands/prone.svg"
+    "name": "CoH II Command: Prone",
+    "path": "coh2/command-prone.webp"
   },
   {
-    "name": "Command: movement",
-    "path": "commands/movement.svg"
+    "name": "CoH II Command: Skills",
+    "path": "coh2/command-skills.webp"
   },
   {
-    "name": "Command: skills",
-    "path": "commands/skills.svg"
+    "name": "CoH II Command: Attributes",
+    "path": "coh2/command-attributes.webp"
   },
   {
-    "name": "Command: attributes",
-    "path": "commands/attributes.svg"
+    "name": "CoH II Command: Run",
+    "path": "coh2/command-run.webp"
   },
   {
-    "name": "Command: run",
-    "path": "commands/run.svg"
+    "name": "CoH II Command: Items",
+    "path": "coh2/command-items.webp"
   },
   {
-    "name": "Command: items",
-    "path": "commands/items.svg"
+    "name": "CoH II Command: Status",
+    "path": "coh2/command-status.webp"
   },
   {
-    "name": "Command: status",
-    "path": "commands/status.svg"
+    "name": "CoH II Command: Powers",
+    "path": "coh2/command-powers.webp"
   },
   {
-    "name": "Command: powers",
-    "path": "commands/powers.svg"
+    "name": "CoH II Command: Shaken",
+    "path": "coh2/command-shaken.webp"
   },
   {
-    "name": "Command: actions",
-    "path": "commands/actions.svg"
+    "name": "CoH II Command: Weapons",
+    "path": "coh2/command-weapons.webp"
   },
   {
-    "name": "Command: effects",
-    "path": "commands/effects.svg"
+    "name": "CoH II Command: Actions",
+    "path": "coh2/command-actions.webp"
   },
   {
-    "name": "Command: benny",
-    "path": "commands/benny.svg"
+    "name": "CoH II Command: Effects",
+    "path": "coh2/command-effects.webp"
   },
   {
-    "name": "Command: giveBenny",
-    "path": "commands/giveBenny.svg"
+    "name": "CoH II Command: Benny",
+    "path": "coh2/command-benny.webp"
   },
   {
-    "name": "Command: help",
-    "path": "commands/help.svg"
+    "name": "SC II Ability: Cloak",
+    "path": "sc2/cloak.webp"
   },
   {
-    "name": "Command: sheet",
-    "path": "commands/sheet.svg"
+    "name": "SC II Ability: Snipe",
+    "path": "sc2/snipe.webp"
+  },
+  {
+    "name": "SC II Ability: Scannersweep",
+    "path": "sc2/scannersweep.webp"
+  },
+  {
+    "name": "SC II Ability: Emp",
+    "path": "sc2/emp.webp"
+  },
+  {
+    "name": "SC II Ability: Heal",
+    "path": "sc2/heal.webp"
+  },
+  {
+    "name": "SC II Ability: Defensivematrix",
+    "path": "sc2/defensivematrix.webp"
+  },
+  {
+    "name": "SC II Ability: Charge",
+    "path": "sc2/charge.webp"
+  },
+  {
+    "name": "SC II Ability: Charge (Color)",
+    "path": "sc2/charge-color.webp"
   }
 ]
