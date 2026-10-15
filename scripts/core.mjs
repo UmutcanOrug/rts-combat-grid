@@ -1,11 +1,16 @@
 export const ID = "rts-combat-grid";
 export const ASSETS = `modules/${ID}/assets`;
-export const THEMES = {coh2: "CoH II · Frontline", sc2: "SC II · Terran"};
+export const THEMES = {coh2:"CoH II · Frontline", sc2:"SC II · Terran", ironclad:"Ironclad", arcane:"Arcane", desert:"Desert"};
 export const ATTRIBUTES = {agility:"Agility", smarts:"Smarts", spirit:"Spirit", strength:"Strength", vigor:"Vigor"};
-export const COMMANDS = {sheet:"Character sheet", run:"Run", spirit:"Spirit roll", vigor:"Vigor roll", benny:"Spend a Benny", combat:"Toggle combat", target:"Select targets", clearTargets:"Clear targets"};
+export const COMMANDS = {weapons:"Use Weapon", powers:"Powers", actions:"Actions", items:"Use Item", skills:"Skills", attributes:"Attributes", movement:"Movement", benny:"Spend a Benny", help:"Help Me", prone:"Prone", run:"Run", status:"Status", effects:"Effects", sheet:"Character Sheet", giveBenny:"Give a Benny"};
+export const DEFAULT_COMMANDS = ["prone","movement","skills","attributes","run","items","status","powers"];
+export const LOADOUT = {primary:"1st Weapon",secondary:"2nd Weapon",sidearm:"Sidearm"};
+export const CATEGORIES = ["base","commands","weapons","powers","actions","skills","items"];
+export const commandSlots = () => DEFAULT_COMMANDS.map(ref=>({kind:"command",ref}));
+export const COMMAND_ICONS = Object.fromEntries(Object.keys(COMMANDS).map(ref=>[ref,`${ASSETS}/commands/${ref}.svg`]));
 export const ITEM_ACTIONS = {attack:"Attack / use", damage:"Damage", reload:"Reload", card:"Chat card", sheet:"Item sheet"};
 export const GLYPHS = {sheet:"▤", run:"➜", spirit:"◉", vigor:"✚", benny:"★", combat:"⚔", target:"⌖", clearTargets:"⊗", weapon:"⚔", power:"ϟ", skill:"◆", macro:"▶", attribute:"◇", condition:"◈", item:"⚔"};
-export const DEFAULTS = {version:1, theme:"coh2", columns:5, rows:3, size:62, labels:false, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
+export const DEFAULTS = {version:2, theme:"coh2", columns:5, rows:3, size:62, labels:true, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
 export const array = collection => collection?.contents ?? Array.from(collection?.values?.() ?? collection ?? []);
 export const escape = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 export const clone = value => structuredClone(value);
@@ -18,48 +23,67 @@ export const imagePath = value => {
 };
 export const cssImage = path => path ? `url("${imagePath(path).replace(/\\/g,"\\\\").replace(/"/g,'\\"')}")` : "none";
 export function normalizeSlot(raw) {
-  if (!raw || !["item","macro","attribute","command","condition"].includes(raw.kind)) return null;
+  if (!raw || !["loadout","item","macro","attribute","command","condition"].includes(raw.kind)) return null;
   const ref = String(raw.ref ?? "").slice(0,200);
   if (!ref) return null;
+  if (raw.kind === "loadout" && !Object.hasOwn(LOADOUT,ref)) return null;
   if (raw.kind === "attribute" && !Object.hasOwn(ATTRIBUTES,ref)) return null;
   if (raw.kind === "command" && !Object.hasOwn(COMMANDS,ref)) return null;
-  return {kind:raw.kind, ref, action:String(raw.action ?? "attack").slice(0,120), label:String(raw.label ?? "").slice(0,80), icon:imagePath(raw.icon), hint:String(raw.hint ?? "").slice(0,500)};
+  return {kind:raw.kind, ref, action:String(raw.action ?? "attack").slice(0,120), label:String(raw.label ?? "").slice(0,80), icon:imagePath(raw.icon), hint:String(raw.hint ?? "").slice(0,500), macro:String(raw.macro ?? "").slice(0,200)};
 }
 export function normalizeConfig(raw = {}, fallbackTheme = "coh2") {
   raw = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const config = {...DEFAULTS, theme:Object.hasOwn(THEMES,raw.theme) ? raw.theme : fallbackTheme,
-    columns:bounded(raw.columns,3,8,5), rows:bounded(raw.rows,2,6,3), size:bounded(raw.size,40,96,62), labels:raw.labels === true,
+    columns:bounded(raw.columns,3,8,5), rows:bounded(raw.rows,2,6,3), size:bounded(raw.size,40,96,62), labels:raw.labels !== false,
     title:String(raw.title ?? "").slice(0,80), portrait:imagePath(raw.portrait), background:imagePath(raw.background), frame:imagePath(raw.frame),
     accent:/^#[a-f\d]{6}$/i.test(raw.accent ?? "") ? raw.accent : ""};
   config.pages = (Array.isArray(raw.pages) ? raw.pages : []).slice(0,12).map((page,i) => ({
-    id:`page-${i}`, name:String(page?.name ?? `Page ${i+1}`).slice(0,40),
+    id:`page-${i}`, name:String(page?.name ?? `Page ${i+1}`).slice(0,40), category:CATEGORIES.includes(page?.category) ? page.category : "custom",
     slots:(Array.isArray(page?.slots) ? page.slots : []).slice(0,48).map(normalizeSlot)
   }));
   return config;
 }
-export const itemSlot = item => ({kind:"item", ref:item.id, action:["weapon","power"].includes(item.type) ? "attack" : item.type === "skill" ? "attack" : "card", label:"", icon:"", hint:""});
+export const itemSlot = item => ({kind:"item", ref:item.id, action:["weapon","power","skill","action"].includes(item.type) ? "attack" : "card", label:"", icon:"", hint:""});
+export function loadoutItem(actor, ref) {
+  const weapons=array(actor.items).filter(item=>item.type === "weapon");
+  weapons.sort((a,b)=>Number(Boolean(b.system?.equipped))-Number(Boolean(a.system?.equipped)));
+  const sidearm=weapons.find(item=>/\b(pistol|sidearm|handgun|revolver)\b/i.test(`${item.name} ${item.system?.category ?? ""}`));
+  const primary=weapons.filter(item=>item !== sidearm);
+  return ref === "sidearm" ? sidearm ?? primary[2] : primary[ref === "secondary" ? 1 : 0];
+}
+export function actorActionSlots(actor) {
+  const items=array(actor.items);
+  return items.filter(item=>item.type === "action").map(itemSlot).concat(items.filter(item=>item.type !== "action").flatMap(item=>
+    Object.entries(item.system?.actions?.additional ?? {}).filter(([,action])=>action).map(([key,action])=>({kind:"item",ref:item.id,action:key,label:`${action.name || key} · ${item.name}`,icon:"",hint:"Configure this action in SWADE Tools."}))));
+}
+export function migrateConfig(raw, actor, theme="coh2") {
+  const config=normalizeConfig(raw,theme);
+  if(Number(raw?.version ?? 1)<2) {
+    const standard=/^(Weapons|Powers|Skills|Commands|Actions|Items)( \d+)?$/;
+    const custom=config.pages.filter(page=>!standard.test(page.name));
+    const saved=config.pages.filter(page=>standard.test(page.name)).flatMap(page=>page.slots).filter(slot=>slot && (slot.kind === "macro" || slot.kind === "condition" || slot.label || slot.icon || slot.hint || (slot.kind === "item" && !["attack","card"].includes(slot.action))));
+    config.pages=[...autoConfig(actor,theme).pages,...custom];
+    for(let i=0;i<saved.length;i+=15)config.pages.push({name:`Saved Buttons${i ? ` ${i/15+1}` : ""}`,slots:saved.slice(i,i+15)});
+  }
+  const index=config.pages.findIndex(page=>page.category === "base");
+  if(index>0)config.pages.unshift(config.pages.splice(index,1)[0]);
+  return normalizeConfig(config,theme);
+}
 export function autoConfig(actor, theme = "coh2") {
   const config = normalizeConfig({},theme);
-  const items = array(actor.items);
-  const count = config.columns * config.rows;
-  const add = (name, slots) => {
-    for(let i=0;i<Math.max(1,slots.length);i+=count) config.pages.push({id:`page-${config.pages.length}`,name:`${name}${i ? ` ${Math.floor(i/count)+1}` : ""}`,slots:slots.slice(i,i+count)});
-  };
-  add("Weapons", items.filter(i => i.type === "weapon").map(itemSlot));
-  add("Powers",items.filter(i => i.type === "power").map(itemSlot));
-  add("Skills",items.filter(i => i.type === "skill").map(itemSlot));
-  add("Commands",Object.keys(COMMANDS).map(ref => ({kind:"command",ref})).concat(Object.keys(ATTRIBUTES).map(ref=>({kind:"attribute",ref}))));
+  const commands=commandSlots();
+  config.pages=[{name:"Base",category:"base",slots:[{kind:"loadout",ref:"primary"},...commands.slice(0,4),{kind:"loadout",ref:"secondary"},...commands.slice(4),{kind:"loadout",ref:"sidearm"},null,null,null,null]}];
   return normalizeConfig(config,theme);
 }
 export function readConfig(actor, theme = "coh2") {
   const raw=actor?.getFlag?.(ID,"grid");
-  return raw?.pages?.length ? normalizeConfig(raw,theme) : autoConfig(actor,theme);
+  return raw?.pages?.length ? migrateConfig(raw,actor,theme) : autoConfig(actor,theme);
 }
 export function slotView(slot, actor, gameRef, theme) {
   if (!slot) return {empty:true,label:"Empty slot",hint:"Assign a command in edit mode.",glyph:"+"};
   let label="", icon="", hint="", disabled=false, badge="", type=slot.kind, active=false;
-  if(slot.kind === "item") {
-    const item=actor.items.get(slot.ref); disabled=!item;
+  if(slot.kind === "item" || slot.kind === "loadout") {
+    const item=slot.kind === "loadout" ? loadoutItem(actor,slot.ref) : actor.items.get(slot.ref); disabled=!item;
     label=item?.name ?? "Missing item"; icon=imagePath(item?.img); type=item?.type ?? "item";
     const system=item?.system ?? {};
     if(type === "weapon") {
@@ -67,7 +91,8 @@ export function slotView(slot, actor, gameRef, theme) {
       const current=system.currentShots, max=system.shots;
       if(Number(max)>0 && current !== undefined) badge=`${current}/${max}`;
     } else if(type === "power") { hint=[ITEM_ACTIONS[slot.action] ?? slot.action,system.pp !== undefined && `${system.pp} PP`,system.range && `Range ${system.range}`].filter(Boolean).join(" · "); }
-    else hint=type === "skill" ? `Skill roll · d${system.die?.sides ?? "?"}` : "Item card";
+    else hint=type === "skill" ? `Skill roll · d${system.die?.sides ?? "?"}` : type === "action" ? "Open the SWADE Tools action dialog" : "Item card";
+    if(slot.kind === "loadout") {hint=item ? `${item.name} · ${hint}` : "No weapon assigned. Shift-click to assign a weapon.";label=LOADOUT[slot.ref];if(!icon)icon=COMMAND_ICONS.weapons;}
   } else if(slot.kind === "macro") {
     const macro=gameRef.macros?.get(slot.ref); disabled=!macro || macro.canExecute === false;
     label=macro?.name ?? "Missing macro";icon=imagePath(macro?.img);hint="Run the macro with this actor and token";
@@ -78,7 +103,11 @@ export function slotView(slot, actor, gameRef, theme) {
     icon=imagePath(effect?.img ?? effect?.icon);hint="Toggle condition";active=actor.statuses?.has(slot.ref) ?? false;
     disabled=!effect;
   } else {label=COMMANDS[slot.ref];hint=label;
-    if(theme === "sc2") icon=({run:`${ASSETS}/sc2/move.webp`,spirit:`${ASSETS}/sc2/hold.webp`,vigor:`${ASSETS}/sc2/stimpack.webp`,combat:`${ASSETS}/sc2/attack.webp`,target:`${ASSETS}/sc2/patrol.webp`,clearTargets:`${ASSETS}/sc2/stop.webp`})[slot.ref] ?? "";
+    icon=COMMAND_ICONS[slot.ref] ?? "";
+    if(slot.ref === "prone")active=actor.statuses?.has("prone") ?? false;
+    if(slot.ref === "giveBenny"){disabled=!gameRef.user?.isGM;hint="GM only: grant a Benny to this actor.";}
+    if(slot.ref === "help")hint="Quick guidance for main and free actions, with SWADE Tools skill rolls.";
+    if(slot.ref === "actions")hint="Actor Action items, additional item actions, and installed SWADE action compendiums.";
   }
   return {empty:false,label:slot.label || label,icon:slot.icon || icon,hint:slot.hint || hint,disabled,badge,glyph:GLYPHS[slot.kind === "command" ? slot.ref : type] ?? "◆",active,type};
 }
@@ -101,4 +130,9 @@ export function canUse(token, user) {
 export function statView(actor) {
   const system=actor.system ?? {};
   return {wounds:`${system.wounds?.value ?? 0}/${system.wounds?.max ?? 3}`,fatigue:`${system.fatigue?.value ?? 0}/${system.fatigue?.max ?? 2}`,bennies:system.bennies?.value ?? "—",pp:system.powerPoints?.general?.value ?? system.powerPoints?.value ?? "—",parry:system.stats?.parry?.value ?? "—",toughness:system.stats?.toughness?.value ?? "—"};
+}
+export function woundView(actor) {
+  const max=Math.max(0,Math.floor(Number(actor.system?.wounds?.max) || 0));
+  const value=Math.max(0,Math.floor(Number(actor.system?.wounds?.value) || 0));
+  return {max,value,incapacitated:value>max || Boolean(actor.statuses?.has("incapacitated"))};
 }

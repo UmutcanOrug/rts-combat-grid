@@ -1,4 +1,4 @@
-import {ID, ASSETS, THEMES, ATTRIBUTES, COMMANDS, array, escape as e, clone, normalizeConfig, normalizeSlot, autoConfig} from "./core.mjs";
+import {ID, ASSETS, THEMES, ATTRIBUTES, COMMANDS, LOADOUT, array, escape as e, clone, normalizeConfig, normalizeSlot, autoConfig, migrateConfig} from "./core.mjs";
 import {itemActions} from "./actions.mjs";
 
 const options = (entries, current) => Object.entries(entries).map(([value,label])=>`<option value="${e(value)}" ${value===current ? "selected" : ""}>${e(label)}</option>`).join("");
@@ -53,7 +53,7 @@ export async function editAppearance(controller) {
       const data=values(app);
       const names=String(data.pages ?? "").split(/\r?\n/).map(s=>s.trim()).filter(Boolean).slice(0,12);
       if(!names.length) throw new Error("Enter at least one page name.");
-      return normalizeConfig({...config,...data,labels:data.labels === "yes",pages:names.map((name,i)=>({name,slots:config.pages[i]?.slots ?? []}))});
+      return normalizeConfig({...config,...data,labels:data.labels === "yes",pages:names.map((name,i)=>({...config.pages[i],name,slots:config.pages[i]?.slots ?? []}))});
     }},{action:"cancel",label:"Cancel"}],
     render:(_event,app)=>{
       const root=app.element;bindPickers(root);
@@ -69,7 +69,7 @@ export async function editAppearance(controller) {
           if(file.size>200000)throw new Error("The layout file is too large.");
           const data=JSON.parse(await file.text());
           if(data.format !== ID || data.version !== 1 || !data.grid?.pages?.length) throw new Error("Choose an RTS Combat Grid v1 layout file.");
-          imported=normalizeConfig(data.grid);
+          imported=migrateConfig(data.grid,actor,config.theme);
           root.querySelector(".rcg-edit-intro").textContent=`${file.name} is ready. ${imported.pages.length} pages · ${THEMES[imported.theme]}. Click Save to apply.`;
         } catch(error){ui.notifications.error(error.message);event.target.value="";}
       });
@@ -80,14 +80,15 @@ export async function editAppearance(controller) {
 export async function editSlot(controller, index) {
   const token=controller.token, actor=token.actor, page=controller.page, existing=controller.config.pages[page].slots[index];
   const slot=existing ?? {kind:"item",ref:"",action:"attack",label:"",icon:"",hint:""};
-  const kinds={item:"Weapon / power / skill / item",macro:"Foundry macro",attribute:"SWADE attribute",command:"Built-in command",condition:"Condition"};
-  const references=kind=>kind === "item" ? Object.fromEntries(array(actor.items).map(item=>[item.id,`${item.name} · ${item.type}`])) : kind === "macro" ? Object.fromEntries(array(game.macros).filter(m=>m.canExecute !== false).map(m=>[m.id,m.name])) : kind === "attribute" ? ATTRIBUTES : kind === "command" ? COMMANDS : Object.fromEntries(CONFIG.statusEffects.map(effect=>[effect.id,game.i18n.localize(effect.name ?? effect.label ?? effect.id)]));
+  const kinds={loadout:"Automatic weapon slot",item:"Weapon / power / skill / action / item",macro:"Foundry macro",attribute:"SWADE attribute",command:"Built-in command",condition:"Condition"};
+  const references=kind=>kind === "loadout" ? LOADOUT : kind === "item" ? Object.fromEntries(array(actor.items).map(item=>[item.id,`${item.name} · ${item.type}`])) : kind === "macro" ? Object.fromEntries(array(game.macros).filter(m=>m.canExecute !== false).map(m=>[m.id,m.name])) : kind === "attribute" ? ATTRIBUTES : kind === "command" ? COMMANDS : Object.fromEntries(CONFIG.statusEffects.map(effect=>[effect.id,game.i18n.localize(effect.name ?? effect.label ?? effect.id)]));
   let catalogue=[];
   try {const response=await fetch(`modules/${ID}/assets/catalog.json`);if(response.ok)catalogue=await response.json();} catch {/* User file picker is always available. */}
   const content=`<div class="rcg-edit-intro"><b>Button ${index+1}</b><p>${e(controller.config.pages[page].name)} · ${e(actor.name)}</p></div>
   <div class="rcg-form-grid">${field("Button type",`<select name="kind">${options(kinds,slot.kind)}</select>`)}${field("Assigned entry",`<select name="ref">${options(references(slot.kind),slot.ref)}</select>`)}
   ${field("Click action",`<select name="action"></select>`)}${field("Custom label",text("label",slot.label,'placeholder="Use entry name"'))}
-  ${imageField("Custom icon","icon",slot.icon)}${field("Tooltip",text("hint",slot.hint,'placeholder="Automatic item details"'))}</div>
+  ${imageField("Custom icon","icon",slot.icon)}${field("Tooltip",text("hint",slot.hint,'placeholder="Automatic item details"'))}
+  <div data-movement-field>${field("Movement voice macro",`<select name="macro">${options({"":"None",...Object.fromEntries(array(game.macros).filter(m=>m.canExecute !== false).map(m=>[m.id,m.name]))},slot.macro)}</select>`,"For the Movement command: run once after this player next moves this token. The macro receives actor, token, tokenDocument, from, and to.")}</div></div>
   ${catalogue.length ? `<p class="rcg-note">Game icon library — click to select</p><div class="rcg-icon-library">${catalogue.map(asset=>`<button type="button" data-icon="${e(`${ASSETS}/${asset.path}`)}" title="${e(asset.name)}"><img src="${e(`${ASSETS}/${asset.path}`)}" alt="${e(asset.name)}" loading="lazy"></button>`).join("")}</div>` : ""}
   <p class="rcg-note">Right-click a button during play to choose attack, damage, reload, and other item actions.</p>`;
   const result=await dialog({window:{title:"RTS Combat Grid · Edit button"},content,buttons:[
@@ -103,6 +104,7 @@ export async function editSlot(controller, index) {
         const item=actor.items.get(ref.value);
         action.innerHTML=options(kind.value === "item" ? Object.fromEntries(itemActions(item).map(a=>[a.ref,a.label])) : {attack:"Default"},slot.action);
         action.disabled=kind.value !== "item";
+        root.querySelector('[data-movement-field]').hidden=!(kind.value === "command" && ref.value === "movement");
       };
       kind.addEventListener("change",()=>{ref.innerHTML=options(references(kind.value),"");refreshAction();});ref.addEventListener("change",refreshAction);refreshAction();
       root.querySelectorAll("[data-icon]").forEach(button=>button.addEventListener("click",()=>{root.querySelector('[name="icon"]').value=button.dataset.icon;root.querySelectorAll("[data-icon]").forEach(b=>b.classList.toggle("selected",b===button));}));

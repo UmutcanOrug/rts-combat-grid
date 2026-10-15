@@ -1,10 +1,10 @@
-import {ID, THEMES, readConfig, normalizeConfig, insertSlot, moveSlot, itemSlot, canUse, cssImage, escape as e} from "./core.mjs";
-import {executeSlot,itemActions} from "./actions.mjs";
+import {ID, THEMES, readConfig, normalizeConfig, insertSlot, moveSlot, itemSlot, loadoutItem, canUse, cssImage, escape as e} from "./core.mjs";
+import {executeSlot,executeMacro,adjustWounds,itemActions} from "./actions.mjs";
 import {renderPanel} from "./view.mjs";
 import {editAppearance,editSlot} from "./editor.mjs";
 
 export class CombatGrid {
-  token=null; config=null; page=0; editing=false; pinned=false; element=null; busy=false; menu=null; saveChain=Promise.resolve();
+  token=null; config=null; page=0; editing=false; pinned=false; element=null; busy=false; menu=null; movement=null; saveChain=Promise.resolve();
   constructor() {
     document.addEventListener("keydown",event=>{
       if(!this.element || event.defaultPrevented || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName) || event.target?.isContentEditable || document.querySelector("dialog[open]")) return;
@@ -18,7 +18,7 @@ export class CombatGrid {
     if(this.pinned && this.token !== token && !force) return;
     const changed=this.token?.document.uuid !== token.document.uuid;
     this.token=token;this.config=readConfig(token.actor,game.settings.get(ID,"theme"));
-    if(changed){this.page=0;this.editing=false;this.pinned=false;}
+    if(changed){this.page=0;this.editing=false;this.pinned=false;this.movement=null;}
     this.page=Math.min(this.page,this.config.pages.length-1);
     if(!this.element){
       this.element=document.createElement("section");this.element.id="rts-combat-grid";this.element.setAttribute("aria-label","RTS Combat Grid");
@@ -43,7 +43,7 @@ export class CombatGrid {
     this.element.querySelectorAll("img").forEach(img=>img.addEventListener("error",()=>img.remove(),{once:true}));
     this.clampPosition();
   }
-  close(){this.element?.remove();this.element=null;this.token=null;this.pinned=false;this.editing=false;this.closeMenu();}
+  close(){this.element?.remove();this.element=null;this.token=null;this.pinned=false;this.editing=false;this.movement=null;this.closeMenu();}
   refresh(){if(this.token){this.config=readConfig(this.token.actor,game.settings.get(ID,"theme"));this.page=Math.min(this.page,this.config.pages.length-1);this.render();}}
   async saveConfig(config,token=this.token) {
     if(!canUse(token,game.user))throw new Error("You do not have permission to save this layout.");
@@ -61,12 +61,33 @@ export class CombatGrid {
   }
   async run(slot,event,button) {
     if(this.busy)return;this.busy=true;button?.classList.add("busy");
-    try {await executeSlot(slot,this.token,event);}
+    try {
+      const token=this.token,result=await executeSlot(slot,token,event);
+      if(result?.movement && this.token === token) {
+        this.movement={token,macro:result.macro,from:{x:token.document.x,y:token.document.y}};
+        Hooks.callAll("rtsCombatGridMovementArmed",{actor:token.actor,token,tokenDocument:token.document});
+      }
+    }
     catch(error){this.error(error);}
     finally{this.busy=false;button?.classList.remove("busy");this.refresh();}
   }
   error(error){console.error(`${ID} |`,error);ui.notifications.error(error.message || "The action could not be completed.");}
   guard(action){return Promise.resolve().then(action).catch(error=>this.error(error));}
+  async changeWounds(change) {
+    if(this.busy)return;this.busy=true;
+    try{await adjustWounds(this.token,change);}catch(error){this.error(error);}finally{this.busy=false;this.refresh();}
+  }
+  async onMovement(document,changed,userId) {
+    const armed=this.movement;
+    if(!armed || document.uuid !== armed.token.document.uuid || userId !== game.user.id || (!Object.hasOwn(changed,"x") && !Object.hasOwn(changed,"y")))return;
+    const to={x:document.x,y:document.y};
+    if(to.x === armed.from.x && to.y === armed.from.y)return;
+    this.movement=null;this.render();
+    if(!canUse(armed.token,game.user) || (game.paused && !game.user.isGM))return;
+    const scope={actor:armed.token.actor,token:armed.token,tokenDocument:document,from:armed.from,to};
+    Hooks.callAll("rtsCombatGridMovement",scope);
+    if(armed.macro)await this.guard(()=>executeMacro(armed.macro,armed.token,{from:armed.from,to}));
+  }
   bind() {
     const root=this.element;
     // Do not forward panel interactions to Foundry's canvas or global key handlers.
@@ -74,6 +95,8 @@ export class CombatGrid {
     root.addEventListener("wheel",event=>event.stopPropagation(),{passive:true});
     root.addEventListener("click",event=>{
       event.stopPropagation();const button=event.target.closest("button");if(!button)return;
+      if(button.dataset.woundDelta !== undefined){void this.changeWounds({delta:Number(button.dataset.woundDelta)});return;}
+      if(button.dataset.woundValue !== undefined){void this.changeWounds({value:Number(button.dataset.woundValue)});return;}
       if(button.dataset.slot !== undefined){void this.activate(Number(button.dataset.slot),event);return;}
       if(button.dataset.page !== undefined){this.page=Number(button.dataset.page);this.render();return;}
       if(button.dataset.command){void this.run({kind:"command",ref:button.dataset.command},event,button);return;}
@@ -123,7 +146,7 @@ export class CombatGrid {
   }
   showMenu(index,button) {
     this.closeMenu();const slot=this.config.pages[this.page]?.slots[index];
-    const item=slot?.kind === "item" ? this.token.actor.items.get(slot.ref) : null;
+    const item=slot?.kind === "loadout" ? loadoutItem(this.token.actor,slot.ref) : slot?.kind === "item" ? this.token.actor.items.get(slot.ref) : null;
     const menu=document.createElement("div");menu.className="rcg-context";menu.setAttribute("role","menu");
     menu.innerHTML=`<strong>${e(slot?.label || item?.name || "Button")}</strong>${itemActions(item).map(action=>`<button type="button" role="menuitem" data-item-action="${e(action.ref)}">${e(action.label)}</button>`).join("")}<button type="button" role="menuitem" data-edit-slot>✎ Edit button</button>`;
     const rect=button.getBoundingClientRect();menu.style.left=`Math.min(rect.left,innerWidth-210)}px`;menu.style.top=`${Math.max(8,rect.top-10)}px`;
@@ -161,7 +184,6 @@ export let grid;
 Hooks.once("init",()=>{
   const register=(key,name,type,defaultValue,extra={})=>game.settings.register(ID,key,{name,scope:"client",config:true,type,default:defaultValue,...extra});
   register("enabled","RTS Combat Grid: Enable panel",Boolean,true,{onChange:value=>{if(!value)grid?.close();}});
-  register("autoOpen","Open automatically when right-clicking a token",Boolean,true);
   register("theme","Default theme for new actors",String,"coh2",{scope:"world",choices:THEMES});
   register("follow","Follow the selected token while the panel is open",Boolean,true);
   register("hotkeys","Use Alt+1…9 to activate grid buttons",Boolean,false);
@@ -171,7 +193,7 @@ Hooks.once("init",()=>{
 Hooks.once("ready",()=>{
   if(game.system.id !== "swade")return;
   grid=new CombatGrid();
-  game.modules.get(ID).api={open:token=>grid.open(token ?? canvas.tokens.controlled[0],{force:true}),close:()=>grid.close(),configure:()=>grid.token ? grid.guard(()=>editAppearance(grid)) : ui.notifications.info("Right-click a token first."),getConfig:actor=>readConfig(actor,game.settings.get(ID,"theme"))};
+  game.modules.get(ID).api={open:token=>grid.open(token ?? canvas.tokens.controlled[0],{force:true}),close:()=>grid.close(),configure:()=>grid.token ? grid.guard(()=>editAppearance(grid)) : ui.notifications.info("Click a token's RTS Combat Grid icon first."),getConfig:actor=>readConfig(actor,game.settings.get(ID,"theme"))};
 });
 Hooks.on("renderTokenHUD",(hud,html)=>{
   if(!grid || !canUse(hud.object,game.user) || !game.settings.get(ID,"enabled"))return;
@@ -179,15 +201,14 @@ Hooks.on("renderTokenHUD",(hud,html)=>{
   const column=root?.querySelector(".col.right") ?? root;
   if(column && !column.querySelector(".rcg-launcher")){
     const token=hud.object, button=document.createElement("button");button.type="button";button.className="control-icon rcg-launcher";button.title="RTS Combat Grid";button.setAttribute("aria-label","RTS Combat Grid");button.innerHTML='<i class="fa-solid fa-table-cells"></i>';
-    button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();grid.open(token,{force:true});});column.append(button);
+    button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();if(grid.element && grid.token?.document.uuid === token.document.uuid)grid.close();else grid.open(token,{force:true});});column.append(button);
   }
-  if(game.settings.get(ID,"autoOpen"))grid.open(hud.object);
 });
 Hooks.on("controlToken",(token,controlled)=>{if(grid?.element && controlled && game.settings.get(ID,"follow") && !grid.pinned)grid.open(token);});
 for(const hook of ["updateActor","updateItem","createItem","deleteItem","createActiveEffect","updateActiveEffect","deleteActiveEffect"]){
   Hooks.on(hook,document=>{const actor=document.documentName === "Actor" ? document : document.parent;if(grid?.token && actor?.uuid === grid.token.actor.uuid)grid.refresh();});
 }
-Hooks.on("updateToken",document=>{if(grid?.token?.document.uuid===document.uuid)grid.refresh();});
+Hooks.on("updateToken",(document,changed,options,userId)=>{if(grid?.token?.document.uuid===document.uuid){void grid.onMovement(document,changed ?? {},userId);grid.refresh();}});
 Hooks.on("deleteToken",document=>{if(grid?.token?.document.uuid===document.uuid)grid.close();});
 Hooks.on("deleteActor",actor=>{if(grid?.token?.actor.uuid===actor.uuid)grid.close();});
 Hooks.on("updateUser",user=>{if(user.id===game.user.id)grid?.refresh();});
