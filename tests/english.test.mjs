@@ -6,10 +6,10 @@ import {autoConfig,COMMANDS,ATTRIBUTES,THEMES} from '../scripts/core.mjs';
 
 test('default pages, themes and built-in commands are English',()=>{
   const config=autoConfig({items:[]});
-  assert.deepEqual(config.pages.map(page=>page.name),['Weapons','Powers','Skills','Commands']);
+  assert.deepEqual(config.pages.map(page=>page.name),['Base']);
   assert.equal(THEMES.coh2,'CoH II · Frontline');
   assert.equal(COMMANDS.run,'Run');
-  assert.equal(COMMANDS.sheet,'Character sheet');
+  assert.equal(COMMANDS.sheet,'Character Sheet');
   assert.equal(ATTRIBUTES.spirit,'Spirit');
 });
 
