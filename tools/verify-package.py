@@ -3,7 +3,8 @@ from pathlib import Path
 import json, re
 
 root = Path(__file__).resolve().parents[1]
-with ZipFile(root/'dist/rts-combat-grid-v0.1.0.zip') as package:
+version = json.loads((root/'module.json').read_text())['version']
+with ZipFile(root/f'dist/rts-combat-grid-v{version}.zip') as package:
     assert package.testzip() is None
     names=set(package.namelist())
     manifest=json.loads(package.read('rts-combat-grid/module.json'))
