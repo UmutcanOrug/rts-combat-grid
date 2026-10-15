@@ -1,82 +1,142 @@
 [
   {
     "path": "coh2/rifleman.webp",
-    "name": "CoH II · Infantry"
+    "name": "CoH II \u00b7 Infantry"
   },
   {
     "path": "coh2/medic.webp",
-    "name": "CoH II · Medic"
+    "name": "CoH II \u00b7 Medic"
   },
   {
     "path": "coh2/tank.webp",
-    "name": "CoH II · Tank"
+    "name": "CoH II \u00b7 Tank"
   },
   {
     "path": "coh2/machine-gun.webp",
-    "name": "CoH II · Machine gun"
+    "name": "CoH II \u00b7 Machine gun"
   },
   {
     "path": "coh2/sandbags.webp",
-    "name": "CoH II · Sandbags"
+    "name": "CoH II \u00b7 Sandbags"
   },
   {
     "path": "coh2/artillery.webp",
-    "name": "CoH II · Artillery"
+    "name": "CoH II \u00b7 Artillery"
   },
   {
     "path": "coh2/helmet.webp",
-    "name": "CoH II · Helmet"
+    "name": "CoH II \u00b7 Helmet"
   },
   {
     "path": "coh2/smg.webp",
-    "name": "CoH II · SMG"
+    "name": "CoH II \u00b7 SMG"
   },
   {
     "path": "coh2/mortar.webp",
-    "name": "CoH II · Mortar"
+    "name": "CoH II \u00b7 Mortar"
   },
   {
     "path": "coh2/wire.webp",
-    "name": "CoH II · Barbed wire"
+    "name": "CoH II \u00b7 Barbed wire"
   },
   {
     "path": "coh2/mine.webp",
-    "name": "CoH II · Mine"
+    "name": "CoH II \u00b7 Mine"
   },
   {
     "path": "coh2/supply.webp",
-    "name": "CoH II · Supplies"
+    "name": "CoH II \u00b7 Supplies"
   },
   {
     "path": "coh2/gun.webp",
-    "name": "CoH II · Heavy gun"
+    "name": "CoH II \u00b7 Heavy gun"
   },
   {
     "path": "sc2/move.webp",
-    "name": "SC II · Move"
+    "name": "SC II \u00b7 Move"
   },
   {
     "path": "sc2/stop.webp",
-    "name": "SC II · Stop"
+    "name": "SC II \u00b7 Stop"
   },
   {
     "path": "sc2/hold.webp",
-    "name": "SC II · Hold"
+    "name": "SC II \u00b7 Hold"
   },
   {
     "path": "sc2/attack.webp",
-    "name": "SC II · Attack"
+    "name": "SC II \u00b7 Attack"
   },
   {
     "path": "sc2/patrol.webp",
-    "name": "SC II · Patrol"
+    "name": "SC II \u00b7 Patrol"
   },
   {
     "path": "sc2/stimpack.webp",
-    "name": "SC II · Stimpack"
+    "name": "SC II \u00b7 Stimpack"
   },
   {
     "path": "sc2/marine.webp",
-    "name": "SC II · Marine"
+    "name": "SC II \u00b7 Marine"
+  },
+  {
+    "name": "Command: weapons",
+    "path": "commands/weapons.svg"
+  },
+  {
+    "name": "Command: prone",
+    "path": "commands/prone.svg"
+  },
+  {
+    "name": "Command: movement",
+    "path": "commands/movement.svg"
+  },
+  {
+    "name": "Command: skills",
+    "path": "commands/skills.svg"
+  },
+  {
+    "name": "Command: attributes",
+    "path": "commands/attributes.svg"
+  },
+  {
+    "name": "Command: run",
+    "path": "commands/run.svg"
+  },
+  {
+    "name": "Command: items",
+    "path": "commands/items.svg"
+  },
+  {
+    "name": "Command: status",
+    "path": "commands/status.svg"
+  },
+  {
+    "name": "Command: powers",
+    "path": "commands/powers.svg"
+  },
+  {
+    "name": "Command: actions",
+    "path": "commands/actions.svg"
+  },
+  {
+    "name": "Command: effects",
+    "path": "commands/effects.svg"
+  },
+  {
+    "name": "Command: benny",
+    "path": "commands/benny.svg"
+  },
+  {
+    "name": "Command: giveBenny",
+    "path": "commands/giveBenny.svg"
+  },
+  {
+    "name": "Command: help",
+    "path": "commands/help.svg"
+  },
+  {
+    "name": "Command: sheet",
+    "path": "commands/sheet.svg"
   }
 ]
