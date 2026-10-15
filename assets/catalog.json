@@ -1,0 +1,82 @@
+[
+  {
+    "path": "coh2/rifleman.webp",
+    "name": "CoH II · Infantry"
+  },
+  {
+    "path": "coh2/medic.webp",
+    "name": "CoH II · Medic"
+  },
+  {
+    "path": "coh2/tank.webp",
+    "name": "CoH II · Tank"
+  },
+  {
+    "path": "coh2/machine-gun.webp",
+    "name": "CoH II · Machine gun"
+  },
+  {
+    "path": "coh2/sandbags.webp",
+    "name": "CoH II · Sandbags"
+  },
+  {
+    "path": "coh2/artillery.webp",
+    "name": "CoH II · Artillery"
+  },
+  {
+    "path": "coh2/helmet.webp",
+    "name": "CoH II · Helmet"
+  },
+  {
+    "path": "coh2/smg.webp",
+    "name": "CoH II · SMG"
+  },
+  {
+    "path": "coh2/mortar.webp",
+    "name": "CoH II · Mortar"
+  },
+  {
+    "path": "coh2/wire.webp",
+    "name": "CoH II · Barbed wire"
+  },
+  {
+    "path": "coh2/mine.webp",
+    "name": "CoH II · Mine"
+  },
+  {
+    "path": "coh2/supply.webp",
+    "name": "CoH II · Supplies"
+  },
+  {
+    "path": "coh2/gun.webp",
+    "name": "CoH II · Heavy gun"
+  },
+  {
+    "path": "sc2/move.webp",
+    "name": "SC II · Move"
+  },
+  {
+    "path": "sc2/stop.webp",
+    "name": "SC II · Stop"
+  },
+  {
+    "path": "sc2/hold.webp",
+    "name": "SC II · Hold"
+  },
+  {
+    "path": "sc2/attack.webp",
+    "name": "SC II · Attack"
+  },
+  {
+    "path": "sc2/patrol.webp",
+    "name": "SC II · Patrol"
+  },
+  {
+    "path": "sc2/stimpack.webp",
+    "name": "SC II · Stimpack"
+  },
+  {
+    "path": "sc2/marine.webp",
+    "name": "SC II · Marine"
+  }
+]
