@@ -32,7 +32,7 @@ The four bottom slots start empty for grenades, consumables, macros, or any othe
 
 **Actions** is always visible in the header. It lists actor Action items, additional weapon/power actions, available Aim/Defend/Hold/Wild Attack statuses, and Support/Test and recovery roll shortcuts. **Browse Action Library** finds accessible Action items in world items and installed Item compendiums. Using a library entry explicitly adds a copy to this actor and opens it in SWADE Tools. Rules content is supplied by your installed SWADE content; this module does not bundle rulebook Action items.
 
-**Shaken** is a dedicated toggle in the portrait corner. It shows whether Shaken is active and leaves all four custom item slots available. The header also includes Spend a Benny and Effects. Click the portrait to open the character sheet. Base and any custom page tabs share the header; there is no duplicate Sheet/Target toolbar or instructional footer.
+**Shaken** is a dedicated toggle in the lower portrait card, between Fatigue and Power Points. It shows whether Shaken is active and leaves the portrait and all four custom item slots clear. The header includes Benny controls (remove, spend/count, add) and Effects. Click the portrait to open the character sheet. Base and any custom page tabs share the header; there is no duplicate Sheet/Target toolbar or instructional footer.
 
 ## Five themes
 
@@ -50,7 +50,7 @@ The four bottom slots start empty for grenades, consumables, macros, or any othe
 
 ![Desert](previews/desert-panel.png)
 
-Command icons follow the selected theme: CoH II uses extracted in-game command tiles; SC II uses actual extracted StarCraft II command and ability icons. Run uses the Charge legs icon; Movement uses the Move arrow, and Use Item uses Stimpack. Desert follows CoH II; Ironclad and Arcane follow SC II. Use **Command icon set** to override this choice, or assign a custom icon to an individual slot. The icon library also retains the original extracted unit and ability images. Choose your own images, background, portrait, transparent button frame, accent color, and button labels. Each actor can use a different theme; the GM sets the default for new actors. See [asset sources](assets/SOURCES.md).
+All five themes use the actual extracted **StarCraft II command icons by default**. Previously saved Follow theme/Automatic icon settings also resolve to SC II. Run uses the Charge legs icon; Movement uses the Move arrow, and Use Item uses Stimpack. The SC II theme includes its original game button frames again. CoH II icons remain an optional explicit choice under **Command icon set**. Individual custom slot icons are preserved. The icon library also retains the original extracted unit and ability images. Choose your own images, background, portrait, transparent button frame, accent color, and button labels. Each actor can use a different theme; the GM sets the default for new actors. See [asset sources](assets/SOURCES.md).
 
 ## NPC defaults and Token Configuration
 
@@ -68,6 +68,10 @@ Existing Extras keep their own edited layouts. In their Token Configuration, cli
 ## Choice windows and positioning
 
 Skill, attribute, Action, power, item, status, and effect windows use a searchable, scrollable list of clickable rows. Select a row and click Use. Arrow keys move between visible entries; search filters the list. These windows use styling consistent with SWADE Tools and avoid the host's fixed-height native select listbox.
+
+Skill and attribute entries include the prepared bonus shown on the character sheet, such as **Shooting · d12 +2**. The display includes the trait's die modifier, active effect modifiers, and applicable attribute/trait global modifiers, while ignoring disabled entries. The same notation appears in assigned skill/attribute tooltips. Rolls still use SWADE Tools with the original skill ID or attribute key; the displayed bonus is not added a second time.
+
+![Skill bonus display](previews/skill-roll.png)
 
 The grid launcher is the **first button in the token HUD's left column**. The panel also starts on the left side of the screen. A manually saved panel position is retained; use Panel Settings → Reset position to return to the new left default. Argon can remain enabled or be disabled independently.
 
@@ -120,11 +124,11 @@ Weapons and powers call `game.swadetools.item` with the exact selected token. Ac
 
 SWADE Tools owns range, RoF, modifiers, attack/damage rolls, ammunition, and Power Point consumption. The grid opens its dialogs rather than rolling or consuming those resources a second time. An additional item action is highlighted and made the default in the matching Tools dialog; the player still confirms it there.
 
-Status toggles actual actor conditions. Effects enables/disables editable active effects. Spend a Benny spends one; it does not automatically soak or reroll. Give a Benny is available in the editor for GMs only. Macros retain the current user's execution permissions.
+Status toggles actual actor conditions. Effects enables/disables editable active effects. **Add a Benny** awards one through SWADE, like the actor sheet. **Remove a Benny** reduces the counter directly, clamps at zero, and does not run spending hooks or transfer a Benny through Hard Choices. The middle star/count button remains **Spend a Benny**, with the native spending behavior; it does not automatically soak or reroll. These controls are available to the actor owner and GM. Give a Benny is available in the editor for GMs only. Macros retain the current user's execution permissions.
 
 ## Validation
 
-Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation, portable NPC defaults, item-ID rebinding, token-only assigned items, and GM permissions. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports. Additional checks cover theme-specific command icons, the dedicated Shaken toggle, selecting all entries in a long choice list, three-weapon assignment, and NPC default controls.
+Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation, portable NPC defaults, item-ID rebinding, token-only assigned items, and GM permissions. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports. Additional checks cover SC II icons across all themes, restored SC II frames, the lower Shaken toggle, sheet-equivalent skill bonuses, separate Benny add/remove/spend behavior, selecting all entries in a long choice list, three-weapon assignment, and NPC default controls.
 
 Browser checks use a simulated Foundry/SWADE Tools host. API signatures were checked against local Foundry V13, SWADE 5.0.8, and the author's SWADE Tools 2.2.2 source. A live Foundry world is still needed to verify real dice dialogs and interaction with other enabled modules. Foundry V14 is outside this release's scope.
 
