@@ -22,9 +22,11 @@ The default 5 × 3 grid uses this arrangement. Every slot can be reassigned, cle
 
 | | Column 1 | Column 2 | Column 3 | Column 4 | Column 5 |
 | --- | --- | --- | --- | --- | --- |
-| Row 1 | 1st Weapon | Prone | Movement | Skills | Attributes |
-| Row 2 | 2nd Weapon | Run | Use Item | Status | Powers |
+| Row 1 | 1st Weapon | Movement | Run | Prone | Use Item |
+| Row 2 | 2nd Weapon | Skills | Attributes | Status | Powers |
 | Row 3 | 3rd Weapon | Custom item | Custom item | Custom item | Custom item |
+
+Version 0.3.2 applies this default to new actors and upgrades the original 5 × 3 Base command order on existing actors. Command icons, labels, Movement voice macros, weapon assignments, custom items, and extra pages are retained. Manually rearranged or resized layouts keep their saved positions.
 
 **All Weapons** (crossed weapons in the header) opens **Weapon Loadout** with three selectors: 1st Weapon, 2nd Weapon, and 3rd Weapon. Choose any owned weapon, Automatic, or Empty, then Save Loadout. This updates the three left-hand Base slots and saves the assignments with the layout. Automatic mode prefers equipped weapons and recognizes a pistol/sidearm for the third slot.
 
