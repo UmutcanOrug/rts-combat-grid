@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {normalizeConfig,autoConfig,insertSlot,moveSlot,readConfig,migrateConfig,canUse,imagePath,slotView,loadoutItem,woundView} from "../scripts/core.mjs";
+import {normalizeConfig,autoConfig,insertSlot,moveSlot,readConfig,migrateConfig,canUse,imagePath,slotView,loadoutItem,woundView,traitView} from "../scripts/core.mjs";
 const items=new Map([['a',{id:'a',name:'Rifle',type:'weapon',system:{equipped:true,damage:'2d6',range:'12/24/48',shots:30,currentShots:8}}],['b',{id:'b',name:'SMG',type:'weapon'}],['p',{id:'p',name:'Pistol',type:'weapon'}],['c',{id:'c',name:'Shooting',type:'skill'}]]);
 const actor={items,isOwner:true,getFlag:()=>undefined,system:{},statuses:new Set()};
 test('Base has three weapons down the left, eight commands and four custom slots',()=>{
@@ -31,4 +31,12 @@ test('live ammo and missing loadout references render safely',()=>{
 });
 test('wound capacity zero stays zero and modified capacities remain accurate',()=>{
  assert.deepEqual(woundView({system:{wounds:{value:0,max:0}}}),{value:0,max:0,incapacitated:false});assert.deepEqual(woundView({system:{wounds:{value:1,max:0}}}),{value:1,max:0,incapacitated:true});assert.equal(woundView({system:{wounds:{value:3,max:5}}}).max,5);
+});
+test('trait labels match sheet bonuses from prepared dice, effects and global modifiers',()=>{
+ const actor={system:{stats:{globalMods:{agility:[{value:1}],trait:[{value:-1},{value:20,ignore:true}]}}}};
+ const skill={attribute:'agility',die:{sides:12,modifier:1},effects:[{value:'1'},{value:10,ignore:true}]};
+ assert.deepEqual(traitView(actor,skill,skill.attribute),{modifier:2,label:'d12 +2'});
+ assert.deepEqual(traitView({}, {die:{sides:6,modifier:-2}},'vigor'),{modifier:-2,label:'d6 -2'});
+ assert.deepEqual(traitView({}, {die:{sides:8}},'spirit'),{modifier:0,label:'d8'});
+ const view=slotView({kind:'attribute',ref:'agility'},{...actor,system:{...actor.system,attributes:{agility:skill}}},{},'sc2');assert.match(view.hint,/d12 \+2/);
 });

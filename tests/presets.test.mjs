@@ -15,8 +15,8 @@ test('manual weapon choices and explicit empty override automatic matching',()=>
   const f=fixture(),config=normalizeConfig({...autoConfig(f.base),loadout:{primary:'pistol',secondary:'',sidearm:'rifle'}});
   assert.equal(loadoutItem(f.base,'primary',config).id,'pistol');assert.equal(loadoutItem(f.base,'secondary',config),undefined);assert.equal(loadoutItem(f.base,'sidearm',config).id,'rifle');
 });
-test('command icons follow the selected theme, with an explicit icon-set override',()=>{
-  assert.match(commandIcon('movement','coh2'),/coh2\/command-movement\.webp$/);assert.match(commandIcon('movement','sc2'),/sc2\/move\.webp$/);assert.match(commandIcon('shaken','desert'),/coh2\/command-shaken\.webp$/);assert.match(commandIcon('run','coh2','sc2'),/sc2\/charge\.webp$/);
+test('SC II is the default in every theme; explicit custom icon sets still work',()=>{
+  assert.match(commandIcon('movement','coh2'),/sc2\/move\.webp$/);assert.match(commandIcon('movement','sc2'),/sc2\/move\.webp$/);assert.match(commandIcon('shaken','desert'),/sc2\/stop\.webp$/);assert.match(commandIcon('run','coh2','sc2'),/sc2\/charge\.webp$/);assert.equal(normalizeConfig({iconSet:'auto',theme:'coh2'}).iconSet,'sc2');assert.match(commandIcon('run','sc2','coh2'),/coh2\/command-run\.webp$/);
 });
 test('NPC preset rebinds item buttons and three weapon assignments after item IDs change',()=>{
   const f=fixture(),config=autoConfig(f.base);config.loadout={primary:'rifle',secondary:'',sidearm:'pistol'};config.pages[0].slots[11]={kind:'item',ref:'pistol',action:'attack'};

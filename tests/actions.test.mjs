@@ -5,7 +5,7 @@ import {actionLibrary,chooseActions} from "../scripts/menus.mjs";
 function fixture() {
  const calls=[];
  const item={id:'w',name:'Rifle',isOwner:true,type:'weapon',system:{shots:30,actions:{additional:{burst:{name:'Burst'}}}},sheet:{render:value=>calls.push(['itemSheet',value])},show:()=>calls.push(['card']),reload:()=>calls.push(['reload'])};
- const actor={isOwner:true,items:new Map([['w',item]]),system:{wounds:{value:0,max:0}},sheet:{render:value=>calls.push(['sheet',value])},spendBenny:()=>calls.push(['benny']),getBenny:()=>calls.push(['giveBenny']),toggleStatusEffect:id=>calls.push(['status',id]),update:change=>{Object.assign(actor.system.wounds,{value:change['system.wounds.value']});calls.push(['update',change]);}};
+ const actor={isOwner:true,items:new Map([['w',item]]),system:{wounds:{value:0,max:0},bennies:{value:3}},sheet:{render:value=>calls.push(['sheet',value])},spendBenny:()=>calls.push(['benny']),getBenny:()=>calls.push(['giveBenny']),toggleStatusEffect:id=>calls.push(['status',id]),update:change=>{if('system.wounds.value' in change)actor.system.wounds.value=change['system.wounds.value'];if('system.bennies.value' in change)actor.system.bennies.value=change['system.bennies.value'];calls.push(['update',change]);}};
  const token={actor,document:{hidden:false},control:()=>calls.push(['control'])};
  const runtime={game:{user:{isGM:false},modules:new Map([['swade-tools',{active:true}]]),macros:new Map(),swadetools:{item:(...args)=>calls.push(['toolsItem',...args]),skill:(...args)=>calls.push(['skill',...args]),attribute:(...args)=>calls.push(['attribute',...args]),run:(...args)=>calls.push(['run',...args])},swade:{swadetoolsAttack:(...args)=>calls.push(['action',...args])}},CONFIG:{statusEffects:[{id:'shaken'},{id:'prone'}]},ui:{controls:{activate:options=>calls.push(['tool',options])}}};
  return {calls,item,actor,token,runtime};
@@ -57,4 +57,10 @@ test('cancelled action library browse does not import content',async()=>{
  const f=fixture();f.runtime.game.items=[];f.runtime.game.packs=[];let dialogs=0;
  f.runtime.foundry={applications:{api:{DialogV2:{wait:async()=>++dialogs === 1 ? {entry:{library:true}} : null}}}};
  f.actor.createEmbeddedDocuments=()=>{throw new Error('unexpected import');};await chooseActions(f.token,f.runtime);assert.equal(f.calls.length,0);
+});
+
+test('owner Benny adjustments use native award and direct removal without the spend hook',async()=>{
+ const f=fixture();await executeSlot({kind:'command',ref:'addBenny'},f.token,null,f.runtime);assert.deepEqual(f.calls,[['giveBenny']]);await executeSlot({kind:'command',ref:'removeBenny'},f.token,null,f.runtime);assert.equal(f.actor.system.bennies.value,2);assert.deepEqual(f.calls[1],['update',{'system.bennies.value':2}]);assert.ok(!f.calls.some(call=>call[0]==='benny'));
+ f.actor.system.bennies.value=0;const count=f.calls.length;await executeSlot({kind:'command',ref:'removeBenny'},f.token,null,f.runtime);assert.equal(f.calls.length,count);assert.equal(f.actor.system.bennies.value,0);
+ f.actor.isOwner=false;await assert.rejects(executeSlot({kind:'command',ref:'addBenny'},f.token,null,f.runtime),/permission/);
 });
