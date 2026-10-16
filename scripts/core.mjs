@@ -3,7 +3,7 @@ export const ASSETS = `modules/${ID}/assets`;
 export const THEMES = {coh2:"CoH II · Frontline", sc2:"SC II · Terran", ironclad:"Ironclad", arcane:"Arcane", desert:"Desert"};
 export const ATTRIBUTES = {agility:"Agility", smarts:"Smarts", spirit:"Spirit", strength:"Strength", vigor:"Vigor"};
 export const COMMANDS = {weapons:"Weapon Loadout", powers:"Powers", actions:"Actions", items:"Use Item", skills:"Skills", attributes:"Attributes", movement:"Movement", benny:"Spend a Benny", addBenny:"Add a Benny", removeBenny:"Remove a Benny", help:"Help Me", prone:"Prone", shaken:"Shaken", run:"Run", status:"Status", effects:"Effects", sheet:"Character Sheet", giveBenny:"Give a Benny"};
-export const DEFAULT_COMMANDS = ["prone","movement","skills","attributes","run","items","status","powers"];
+export const DEFAULT_COMMANDS = ["movement","run","prone","items","skills","attributes","status","powers"];
 export const LOADOUT = {primary:"1st Weapon",secondary:"2nd Weapon",sidearm:"3rd Weapon"};
 export const CATEGORIES = ["base","commands","weapons","powers","actions","skills","items"];
 export const commandSlots = () => DEFAULT_COMMANDS.map(ref=>({kind:"command",ref}));
@@ -18,7 +18,7 @@ export function commandIcon(ref,theme="coh2",iconSet="sc2") {
 }
 export const ITEM_ACTIONS = {attack:"Attack / use", damage:"Damage", reload:"Reload", card:"Chat card", sheet:"Item sheet"};
 export const GLYPHS = {sheet:"▤", run:"➜", spirit:"◉", vigor:"✚", benny:"★", combat:"⚔", target:"⌖", clearTargets:"⊗", weapon:"⚔", power:"ϟ", skill:"◆", macro:"▶", attribute:"◇", condition:"◈", item:"⚔"};
-export const DEFAULTS = {version:3, theme:"coh2", iconSet:"sc2", loadout:{}, columns:5, rows:3, size:62, labels:true, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
+export const DEFAULTS = {version:4, theme:"coh2", iconSet:"sc2", loadout:{}, columns:5, rows:3, size:62, labels:true, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
 export const array = collection => collection?.contents ?? Array.from(collection?.values?.() ?? collection ?? []);
 export const escape = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 export const clone = value => structuredClone(value);
@@ -79,6 +79,16 @@ export function migrateConfig(raw, actor, theme="coh2") {
   }
   const index=config.pages.findIndex(page=>page.category === "base");
   if(index>0)config.pages.unshift(config.pages.splice(index,1)[0]);
+  if(Number(raw?.version ?? 1)<4 && config.columns === 5 && config.rows === 3) {
+    const base=config.pages.find(page=>page.category === "base");
+    const positions=[1,2,3,4,6,7,8,9];
+    const oldOrder=["prone","movement","skills","attributes","run","items","status","powers"];
+    const originalWeapons=["primary","secondary","sidearm"].every((ref,i)=>base?.slots[i*5]?.kind === "loadout" && base.slots[i*5].ref === ref);
+    if(originalWeapons && positions.every((position,i)=>base.slots[position]?.kind === "command" && base.slots[position].ref === oldOrder[i])) {
+      const commands=new Map(positions.map(position=>[base.slots[position].ref,base.slots[position]]));
+      positions.forEach((position,i)=>{base.slots[position]=commands.get(DEFAULT_COMMANDS[i]);});
+    }
+  }
   return normalizeConfig(config,theme);
 }
 export function autoConfig(actor, theme = "coh2") {
