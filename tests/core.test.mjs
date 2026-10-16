@@ -6,13 +6,34 @@ const actor={items,isOwner:true,getFlag:()=>undefined,system:{},statuses:new Set
 test('Base has three weapons down the left, eight commands and four custom slots',()=>{
  const c=autoConfig(actor,'sc2');assert.equal(c.theme,'sc2');assert.equal(c.pages.length,1);assert.equal(c.pages[0].name,'Base');
  assert.deepEqual([0,5,10].map(i=>c.pages[0].slots[i].ref),['primary','secondary','sidearm']);
- assert.deepEqual(c.pages[0].slots.filter(s=>s?.kind==='command').map(s=>s.ref),['prone','movement','skills','attributes','run','items','status','powers']);
+ assert.deepEqual(c.pages[0].slots.filter(s=>s?.kind==='command').map(s=>s.ref),['movement','run','prone','items','skills','attributes','status','powers']);
  assert.deepEqual(c.pages[0].slots.slice(11),[null,null,null,null]);assert.deepEqual(readConfig(actor,'sc2'),c);
  assert.equal(loadoutItem(actor,'primary').id,'a');assert.equal(loadoutItem(actor,'secondary').id,'b');assert.equal(loadoutItem(actor,'sidearm').id,'p');
 });
 test('old default tabs migrate to Base; custom bindings and appearance survive',()=>{
  const old={version:1,theme:'sc2',portrait:'portrait.webp',pages:[{name:'Weapons',slots:[{kind:'item',ref:'a',action:'attack'},{kind:'macro',ref:'m',label:'Voice'}]},{name:'Commands',slots:[{kind:'command',ref:'combat'}]},{name:'Utility',slots:[{kind:'attribute',ref:'spirit'}]}]};
  const c=migrateConfig(old,actor);assert.equal(c.pages[0].name,'Base');assert.equal(c.theme,'sc2');assert.equal(c.portrait,'portrait.webp');assert.equal(c.pages[1].name,'Utility');assert.equal(c.pages[2].slots[0].ref,'m');assert.ok(!c.pages.flatMap(p=>p.slots).some(s=>s?.ref==='combat'));
+});
+test('original Base order upgrades without losing command bindings, weapons or custom items',()=>{
+ const old=autoConfig(actor,'sc2');old.version=3;old.loadout={primary:'b',sidearm:'p'};
+ const positions=[1,2,3,4,6,7,8,9],refs=['prone','movement','skills','attributes','run','items','status','powers'];
+ positions.forEach((position,i)=>{old.pages[0].slots[position]={kind:'command',ref:refs[i]};});
+ old.pages[0].slots[2]={kind:'command',ref:'movement',macro:'voice',label:'Advance',icon:'advance.webp',hint:'Move with voice'};
+ old.pages[0].slots[11]={kind:'item',ref:'c'};old.pages.push({name:'Utility',slots:[{kind:'macro',ref:'m'}]});
+ const before=structuredClone(old),c=migrateConfig(old,actor);
+ assert.deepEqual(positions.map(i=>c.pages[0].slots[i].ref),['movement','run','prone','items','skills','attributes','status','powers']);
+ assert.deepEqual(c.pages[0].slots[1],normalizeConfig(before).pages[0].slots[2]);
+ assert.deepEqual(c.loadout,old.loadout);assert.deepEqual(c.pages[0].slots.slice(10),normalizeConfig(before).pages[0].slots.slice(10));
+ assert.deepEqual(c.pages[1],normalizeConfig(before).pages[1]);assert.deepEqual(old,before);assert.deepEqual(migrateConfig(c,actor),c);
+});
+test('custom Base orders and resized grids keep their existing positions',()=>{
+ const custom=autoConfig(actor);custom.version=3;
+ [custom.pages[0].slots[1],custom.pages[0].slots[9]]=[custom.pages[0].slots[9],custom.pages[0].slots[1]];
+ assert.deepEqual(migrateConfig(custom,actor),normalizeConfig(custom));
+ const resized=autoConfig(actor);resized.version=3;resized.columns=4;
+ [1,2,3,4,6,7,8,9].forEach((position,i)=>{resized.pages[0].slots[position]={kind:'command',ref:['prone','movement','skills','attributes','run','items','status','powers'][i]};});
+ assert.deepEqual(migrateConfig(resized,actor),normalizeConfig(resized));
+ const current=autoConfig(actor);current.version=3;assert.deepEqual(migrateConfig(current,actor),normalizeConfig(current));
 });
 test('configuration bounds sizes and rejects unsafe paths and commands',()=>{
  const c=normalizeConfig({theme:'bad',columns:999,rows:-1,size:900,accent:'red;position:fixed',portrait:'javascript:evil()',pages:[{name:'<script>',slots:[{kind:'command',ref:'evil'},{kind:'attribute',ref:'evil'},{kind:'item',ref:'a',icon:'data:image/svg+xml,evil'}]}]});
