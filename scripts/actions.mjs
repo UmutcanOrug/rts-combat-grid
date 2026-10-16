@@ -39,6 +39,15 @@ export async function executeSlot(slot,token,event,runtime=globalThis) {
     case "sheet":return actor.sheet.render(true);
     case "run":return swadeTools(runtime).run(actor);
     case "benny":return actor.spendBenny();
+    case "addBenny":
+      if(!Number.isFinite(Number(actor.system?.bennies?.value)))throw new Error("This actor does not have a Benny counter.");
+      return actor.getBenny();
+    case "removeBenny": {
+      const current=Number(actor.system?.bennies?.value);
+      if(!Number.isFinite(current))throw new Error("This actor does not have a Benny counter.");
+      if(current<=0)return false;
+      return actor.update({"system.bennies.value":Math.max(0,current-1)});
+    }
     case "giveBenny":
       if(!runtime.game.user.isGM)throw new Error("Only the GM can grant Bennies.");
       return actor.getBenny();

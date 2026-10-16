@@ -1,4 +1,4 @@
-import {array,ATTRIBUTES,actorActionSlots,escape as e,canUse} from "./core.mjs";
+import {array,ATTRIBUTES,actorActionSlots,escape as e,canUse,traitView} from "./core.mjs";
 import {swadeTools,useToolsItem} from "./tools-bridge.mjs";
 
 function check(token,runtime) {
@@ -27,11 +27,11 @@ export async function chooseItems(token,kind,runtime=globalThis) {
   return useToolsItem(entry.item,token,["weapon","power"].includes(entry.item.type) || entry.item.system?.actions?.trait || entry.item.system?.isArcaneDevice ? "attack" : "card",null,runtime);
 }
 export async function chooseSkills(token,runtime=globalThis) {
-  const entry=await chooseEntry("Skill Roll",array(token.actor.items).filter(item=>item.type === "skill").map(item=>({label:`${item.name} · d${item.system?.die?.sides ?? "?"}`,id:item.id})),runtime);
+  const entry=await chooseEntry("Skill Roll",array(token.actor.items).filter(item=>item.type === "skill").map(item=>({label:`${item.name} · ${traitView(token.actor,item.system,item.system?.attribute).label}`,id:item.id})),runtime);
   if(entry){check(token,runtime);return swadeTools(runtime).skill(token.actor,entry.id);}
 }
 export async function chooseAttribute(token,runtime=globalThis) {
-  const entry=await chooseEntry("Attribute Roll",Object.entries(ATTRIBUTES).map(([id,label])=>({id,label:`${label} · d${token.actor.system?.attributes?.[id]?.die?.sides ?? "?"}`})),runtime);
+  const entry=await chooseEntry("Attribute Roll",Object.entries(ATTRIBUTES).map(([id,label])=>({id,label:`${label} · ${traitView(token.actor,token.actor.system?.attributes?.[id],id).label}`})),runtime);
   if(entry){check(token,runtime);return swadeTools(runtime).attribute(token.actor,entry.id);}
 }
 export async function actionLibrary(runtime=globalThis) {

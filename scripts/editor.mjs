@@ -34,7 +34,7 @@ export async function editAppearance(controller) {
   const content=`<div class="rcg-edit-intro"><b>Command panel</b><p>${e(actor.name)} appearance and pages. Settings are saved to this actor.</p></div>
   <div class="rcg-form-grid">
   ${field("Base theme",`<select name="theme">${options(THEMES,config.theme)}</select>`)}
-  ${field("Command icon set",`<select name="iconSet">${options({auto:"Follow theme",coh2:"CoH II commands",sc2:"SC II commands"},config.iconSet)}</select>`)}
+  ${field("Command icon set",`<select name="iconSet">${options({sc2:"SC II commands (default)",coh2:"CoH II commands (optional)"},config.iconSet)}</select>`)}
   ${field("Panel title",text("title",config.title,'placeholder="Actor name"'))}
   ${field("Columns",text("columns",config.columns,'type="number" min="3" max="8"'))}
   ${field("Rows",text("rows",config.rows,'type="number" min="2" max="6"'))}

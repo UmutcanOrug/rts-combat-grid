@@ -2,23 +2,23 @@ export const ID = "rts-combat-grid";
 export const ASSETS = `modules/${ID}/assets`;
 export const THEMES = {coh2:"CoH II · Frontline", sc2:"SC II · Terran", ironclad:"Ironclad", arcane:"Arcane", desert:"Desert"};
 export const ATTRIBUTES = {agility:"Agility", smarts:"Smarts", spirit:"Spirit", strength:"Strength", vigor:"Vigor"};
-export const COMMANDS = {weapons:"Weapon Loadout", powers:"Powers", actions:"Actions", items:"Use Item", skills:"Skills", attributes:"Attributes", movement:"Movement", benny:"Spend a Benny", help:"Help Me", prone:"Prone", shaken:"Shaken", run:"Run", status:"Status", effects:"Effects", sheet:"Character Sheet", giveBenny:"Give a Benny"};
+export const COMMANDS = {weapons:"Weapon Loadout", powers:"Powers", actions:"Actions", items:"Use Item", skills:"Skills", attributes:"Attributes", movement:"Movement", benny:"Spend a Benny", addBenny:"Add a Benny", removeBenny:"Remove a Benny", help:"Help Me", prone:"Prone", shaken:"Shaken", run:"Run", status:"Status", effects:"Effects", sheet:"Character Sheet", giveBenny:"Give a Benny"};
 export const DEFAULT_COMMANDS = ["prone","movement","skills","attributes","run","items","status","powers"];
 export const LOADOUT = {primary:"1st Weapon",secondary:"2nd Weapon",sidearm:"3rd Weapon"};
 export const CATEGORIES = ["base","commands","weapons","powers","actions","skills","items"];
 export const commandSlots = () => DEFAULT_COMMANDS.map(ref=>({kind:"command",ref}));
 export const GAME_COMMAND_ICONS = {
-  coh2:{prone:"command-prone",movement:"command-movement",skills:"command-skills",attributes:"command-attributes",run:"command-run",items:"command-items",status:"command-status",powers:"command-powers",shaken:"command-shaken",weapons:"command-weapons",actions:"command-actions",effects:"command-effects",benny:"command-benny",giveBenny:"command-benny",help:"command-status",sheet:"command-items"},
-  sc2:{prone:"hold",movement:"move",skills:"snipe",attributes:"defensivematrix",run:"charge",items:"stimpack",status:"scannersweep",powers:"emp",shaken:"stop",weapons:"attack",actions:"attack",effects:"cloak",benny:"hold",giveBenny:"hold",help:"patrol",sheet:"heal"}
+  coh2:{prone:"command-prone",movement:"command-movement",skills:"command-skills",attributes:"command-attributes",run:"command-run",items:"command-items",status:"command-status",powers:"command-powers",shaken:"command-shaken",weapons:"command-weapons",actions:"command-actions",effects:"command-effects",benny:"command-benny",addBenny:"command-benny",removeBenny:"command-benny",giveBenny:"command-benny",help:"command-status",sheet:"command-items"},
+  sc2:{prone:"hold",movement:"move",skills:"snipe",attributes:"defensivematrix",run:"charge",items:"stimpack",status:"scannersweep",powers:"emp",shaken:"stop",weapons:"attack",actions:"attack",effects:"cloak",benny:"hold",addBenny:"hold",removeBenny:"stop",giveBenny:"hold",help:"patrol",sheet:"heal"}
 };
-export function commandIcon(ref,theme="coh2",iconSet="auto") {
-  const group=["coh2","sc2"].includes(iconSet) ? iconSet : ["coh2","desert"].includes(theme) ? "coh2" : "sc2";
+export function commandIcon(ref,theme="coh2",iconSet="sc2") {
+  const group=iconSet === "coh2" ? "coh2" : "sc2";
   const name=GAME_COMMAND_ICONS[group][ref];
   return name ? `${ASSETS}/${group}/${name}.webp` : "";
 }
 export const ITEM_ACTIONS = {attack:"Attack / use", damage:"Damage", reload:"Reload", card:"Chat card", sheet:"Item sheet"};
 export const GLYPHS = {sheet:"▤", run:"➜", spirit:"◉", vigor:"✚", benny:"★", combat:"⚔", target:"⌖", clearTargets:"⊗", weapon:"⚔", power:"ϟ", skill:"◆", macro:"▶", attribute:"◇", condition:"◈", item:"⚔"};
-export const DEFAULTS = {version:3, theme:"coh2", iconSet:"auto", loadout:{}, columns:5, rows:3, size:62, labels:true, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
+export const DEFAULTS = {version:3, theme:"coh2", iconSet:"sc2", loadout:{}, columns:5, rows:3, size:62, labels:true, title:"", portrait:"", background:"", frame:"", accent:"", pages:[]};
 export const array = collection => collection?.contents ?? Array.from(collection?.values?.() ?? collection ?? []);
 export const escape = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
 export const clone = value => structuredClone(value);
@@ -45,7 +45,7 @@ export function normalizeConfig(raw = {}, fallbackTheme = "coh2") {
     columns:bounded(raw.columns,3,8,5), rows:bounded(raw.rows,2,6,3), size:bounded(raw.size,40,96,62), labels:raw.labels !== false,
     title:String(raw.title ?? "").slice(0,80), portrait:imagePath(raw.portrait), background:imagePath(raw.background), frame:imagePath(raw.frame),
     accent:/^#[a-f\d]{6}$/i.test(raw.accent ?? "") ? raw.accent : ""};
-  config.iconSet=["coh2","sc2"].includes(raw.iconSet) ? raw.iconSet : "auto";
+  config.iconSet=raw.iconSet === "coh2" ? "coh2" : "sc2";
   config.loadout=Object.fromEntries(Object.keys(LOADOUT).filter(key=>Object.hasOwn(raw.loadout ?? {},key)).map(key=>[key,String(raw.loadout[key] ?? "").slice(0,200)]));
   config.pages = (Array.isArray(raw.pages) ? raw.pages : []).slice(0,12).map((page,i) => ({
     id:`page-${i}`, name:String(page?.name ?? `Page ${i+1}`).slice(0,40), category:CATEGORIES.includes(page?.category) ? page.category : "custom",
@@ -121,6 +121,13 @@ export function readConfig(actor, theme = "coh2", tokenDocument=actor?.token) {
   const inherited=actor?.getFlag?.(ID,"grid");
   return inherited?.pages?.length ? migrateConfig(inherited,actor,theme) : autoConfig(actor,theme);
 }
+export function traitView(actor,system={},attribute) {
+  const globals=actor.system?.stats?.globalMods ?? {};
+  const mods=[{value:system.die?.modifier ?? 0},...(system.effects ?? []),...(globals[attribute] ?? []),...(globals.trait ?? [])];
+  const modifier=mods.filter(mod=>!mod.ignore).reduce((sum,mod)=>sum+(Number.isFinite(Number(mod.value)) ? Number(mod.value) : 0),0);
+  const die=`d${system.die?.sides ?? "?"}`;
+  return {modifier,label:`${die}${modifier ? ` ${modifier>0 ? "+" : ""}${modifier}` : ""}`};
+}
 export function slotView(slot, actor, gameRef, theme, config) {
   if (!slot) return {empty:true,label:"Empty slot",hint:"Assign a command in edit mode.",glyph:"+"};
   let label="", icon="", hint="", disabled=false, badge="", type=slot.kind, active=false;
@@ -133,12 +140,12 @@ export function slotView(slot, actor, gameRef, theme, config) {
       const current=system.currentShots, max=system.shots;
       if(Number(max)>0 && current !== undefined) badge=`${current}/${max}`;
     } else if(type === "power") { hint=[ITEM_ACTIONS[slot.action] ?? slot.action,system.pp !== undefined && `${system.pp} PP`,system.range && `Range ${system.range}`].filter(Boolean).join(" · "); }
-    else hint=type === "skill" ? `Skill roll · d${system.die?.sides ?? "?"}` : type === "action" ? "Open the SWADE Tools action dialog" : "Item card";
+    else hint=type === "skill" ? `Skill roll · ${traitView(actor,system,system.attribute).label}` : type === "action" ? "Open the SWADE Tools action dialog" : "Item card";
     if(slot.kind === "loadout") {hint=item ? `${item.name} · ${hint}` : "No weapon assigned. Open Weapon Loadout to assign one.";label=LOADOUT[slot.ref];if(!icon)icon=commandIcon("weapons",theme,config?.iconSet);}
   } else if(slot.kind === "macro") {
     const macro=gameRef.macros?.get(slot.ref); disabled=!macro || macro.canExecute === false;
     label=macro?.name ?? "Missing macro";icon=imagePath(macro?.img);hint="Run the macro with this actor and token";
-  } else if(slot.kind === "attribute") {label=ATTRIBUTES[slot.ref]; hint=`Attribute roll · d${actor.system?.attributes?.[slot.ref]?.die?.sides ?? "?"}`;}
+  } else if(slot.kind === "attribute") {label=ATTRIBUTES[slot.ref]; hint=`Attribute roll · ${traitView(actor,actor.system?.attributes?.[slot.ref],slot.ref).label}`;}
   else if(slot.kind === "condition") {
     const effect=globalThis.CONFIG?.statusEffects?.find(e=>e.id === slot.ref);
     label=effect ? gameRef.i18n.localize(effect.name ?? effect.label ?? effect.id) : slot.ref;
