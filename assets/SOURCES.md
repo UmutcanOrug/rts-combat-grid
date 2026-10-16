@@ -12,3 +12,5 @@ The 15 SVG icons in `commands/` are original vector artwork for this module. Iro
 Version 0.3 adds 13 CoH II command tiles from `coh2ui_i276.dds`. Tile coordinates (column, row), using 64 px tiles on a 66 px grid: Movement (25,13), Prone (20,13), Skills (23,4), Attributes (14,7), Run (18,2), Use Item (10,9), Status (13,4), Powers (0,0), Shaken (12,1), Weapons (11,8), Actions (0,7), Effects (5,6), Benny (4,9).
 
 SC II commands in version 0.3 use the actual game textures. Additional Cloak, Snipe, Scanner Sweep, EMP, Heal, Defensive Matrix, and Protoss Charge textures were extracted from local Liberty assets. Run uses Charge's speeding legs; Movement uses the game's Move command; Use Item uses Stimpack. The previous original SVG icons are retained only for existing custom icon paths. No full archives are included.
+
+Version 0.3.1 uses the extracted SC II icons as the default for every theme and restores `sc2/button-frame.webp` in the SC II theme. CoH II command tiles remain available as an explicit optional icon set.
