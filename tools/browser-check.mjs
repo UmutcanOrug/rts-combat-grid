@@ -31,7 +31,7 @@ await check('right-click only reveals the launcher; icon opens compact Base',asy
 await check('all player roll buttons delegate to SWADE Tools',async()=>{
  await page.evaluate(()=>game.user.isGM=false);
  await page.locator('[data-slot="0"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='rifle' && c.args[1]==='Scene.S.Token.T'));
- await page.locator('[data-slot="3"]').click();await choose('Shooting · d8');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools skill'));
+ await page.locator('[data-slot="3"]').click();await page.locator('dialog').screenshot({path:path.join(out,'skill-roll.png')});await choose('Shooting · d12 +2');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools skill'));
  await page.locator('[data-slot="4"]').click();await choose('Vigor · d6');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools attribute' && c.args[0]==='vigor'));
  await page.locator('[data-slot="6"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools run'));
  await page.locator('[data-slot="9"]').click();await choose('Energy Bolt');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='bolt'));
@@ -41,8 +41,8 @@ await check('searchable choice list scrolls and selects every entry despite host
  await page.locator('[data-slot="3"]').click();const list=page.locator('.rcg-entry-list');assert(await list.evaluate(el=>el.scrollHeight>el.clientHeight),'long list scrolls');assert(await page.locator('dialog select[size]').count()===0,'no compressed select list');await page.locator('dialog [data-search]').fill('Extra Skill 29');await choose('Extra Skill 29 · d6');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools skill' && c.args[0]==='skill-29'));
  await page.evaluate(()=>{for(let i=0;i<30;i++)preview.items.delete('skill-'+i);});
 });
-await check('Shaken toggles directly from the portrait without using an item slot',async()=>{
- assert(await page.locator('[data-command="shaken"]').count()===1,'dedicated Shaken');await page.locator('[data-command="shaken"]').click();assert(await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken enabled');await page.locator('[data-command="shaken"]').click();assert(!await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken cleared');assert(await page.locator('.rcg-slot.empty').count()===4,'custom slots kept');
+await check('Shaken toggles from the lower resource row without using an item slot',async()=>{
+ assert(await page.locator('[data-command="shaken"]').count()===1,'dedicated Shaken');assert(await page.locator('.rcg-resources [data-command="shaken"]').count()===1,'Shaken below wounds');assert(await page.locator('.rcg-portrait-wrap [data-command="shaken"]').count()===0,'portrait unobstructed');await page.locator('[data-command="shaken"]').click();assert(await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken enabled');await page.locator('[data-command="shaken"]').click();assert(!await page.evaluate(()=>preview.actor.statuses.has('shaken')),'Shaken cleared');assert(await page.locator('.rcg-slot.empty').count()===4,'custom slots kept');
 });
 await check('All weapons assigns three persistent Base weapon slots',async()=>{
  await page.locator('[data-command="weapons"]').click();await page.locator('dialog select[name="primary"]').selectOption('mg');await page.locator('dialog select[name="secondary"]').selectOption('rifle');await page.locator('dialog select[name="sidearm"]').selectOption('smg');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});assert(await page.evaluate(()=>preview.actor.flags['rts-combat-grid'].grid.loadout.primary)==='mg','saved weapon');await page.locator('[data-slot="0"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='mg'));
@@ -57,6 +57,12 @@ await check('Prone, Status, Effects, items and Bennies work for an owner player'
  await page.locator('[data-command="effects"]').click();await choose('On · Armor boost');assert(await page.evaluate(()=>preview.actor.effects[0].disabled),'effect toggled');
  await page.locator('[data-slot="7"]').click();await choose('Medical Kit · 2 remaining');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Item card' && c.args[0]==='Medical Kit'));
  await page.locator('[data-command="benny"]').click();assert(await page.evaluate(()=>preview.actor.system.bennies.value)===2,'Benny spent');
+});
+await check('header Benny controls let an owner add, remove and spend separately',async()=>{
+ assert(await page.locator('.rcg-header [data-command="addBenny"]').count()===1,'Add in header');assert(await page.locator('.rcg-header [data-command="removeBenny"]').count()===1,'Remove in header');
+ const before=await page.evaluate(()=>preview.actor.system.bennies.value);const spent=await page.evaluate(()=>preview.calls.filter(c=>c.name==='Benny spent').length);
+ await page.locator('[data-command="addBenny"]').click();await page.waitForFunction(before=>preview.actor.system.bennies.value===before+1,before);await page.locator('[data-command="removeBenny"]').click();await page.waitForFunction(before=>preview.actor.system.bennies.value===before,before);assert(await page.evaluate(()=>preview.calls.filter(c=>c.name==='Benny spent').length)===spent,'remove did not spend');assert(await page.locator('.rcg-benny-count b').textContent()===String(before),'counter refreshed');
+ await page.evaluate(()=>{preview.actor.system.bennies.value=0;Hooks.callAll('updateActor',preview.actor);});assert(await page.locator('[data-command="removeBenny"]').isDisabled(),'zero remove disabled');assert(await page.locator('[data-command="benny"]').isDisabled(),'zero spend disabled');await page.locator('[data-command="addBenny"]').click();await page.waitForFunction(()=>preview.actor.system.bennies.value===1);await page.evaluate(before=>{preview.actor.system.bennies.value=before;Hooks.callAll('updateActor',preview.actor);},before);
 });
 await check('real wound values update through segments and +/-; Extras have no fake bars',async()=>{
  assert(await page.locator('.rcg-wound-segment').count()===3,'wild card 3 bars');await page.locator('[data-wound-value="3"]').click();await page.waitForFunction(()=>preview.actor.system.wounds.value===3);
@@ -75,7 +81,7 @@ await check('player can drag grenades and consumables into bottom custom slots',
 await check('all five themes render and retain the same compact controls',async()=>{
  for(const theme of ['coh2','sc2','ironclad','arcane','desert']){
  await page.evaluate(async theme=>{const c=preview.main.grid.config;c.theme=theme;c.portrait=theme==='sc2'?'modules/rts-combat-grid/assets/sc2/marine.webp':'';await preview.actor.setFlag('rts-combat-grid','grid',c);},theme);await loaded();await page.locator('#rts-combat-grid').screenshot({path:path.join(out,`${theme}-panel.png`)});
- assert(await page.locator(`.theme-${theme} .rcg-slot`).count()===15,theme);const icon=await page.locator('[data-slot="2"] .rcg-slot-icon').getAttribute('src');assert(icon.includes(theme==='coh2' || theme==='desert' ? '/coh2/command-movement.webp' : '/sc2/move.webp'),'theme command icon '+theme);
+ assert(await page.locator(`.theme-${theme} .rcg-slot`).count()===15,theme);const icon=await page.locator('[data-slot="2"] .rcg-slot-icon').getAttribute('src');assert(icon.includes('/sc2/move.webp'),'SC II command icon '+theme);if(theme==='sc2')assert((await page.locator('[data-slot="2"] .rcg-slot-frame').evaluate(el=>getComputedStyle(el).backgroundImage)).includes('sc2/button-frame.webp'),'SC II game frame restored');
  }
 });
 await check('Movement voice macro triggers once on this user next moving this token',async()=>{
