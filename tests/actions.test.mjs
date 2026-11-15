@@ -14,6 +14,19 @@ test('weapon and power use the custom SWADE Tools panel with exact token context
  const f=fixture();await executeSlot({kind:'item',ref:'w',action:'attack'},f.token,null,f.runtime);assert.deepEqual(f.calls,[['toolsItem',f.actor,'w',null,{token:f.token,restoreLast:false,damageOnly:false}]]);
  f.item.type='power';await executeSlot({kind:'item',ref:'w',action:'damage'},f.token,null,f.runtime);assert.equal(f.calls[1][4].damageOnly,true);
 });
+test('Shift-click recalls weapon settings for item and loadout slots without changing normal clicks',async()=>{
+ const f=fixture();
+ for(const slot of [{kind:'item',ref:'w'},{kind:'loadout',ref:'primary'}]) {
+  await executeSlot(slot,f.token,{shiftKey:true},f.runtime);
+  assert.deepEqual(f.calls.at(-1),['toolsItem',f.actor,'w',null,{token:f.token,restoreLast:true,damageOnly:false}]);
+  await executeSlot(slot,f.token,{shiftKey:false},f.runtime);assert.equal(f.calls.at(-1)[4].restoreLast,false);
+ }
+ for(const action of ['damage','burst']) {
+  await executeSlot({kind:'item',ref:'w',action},f.token,{shiftKey:true},f.runtime);
+  assert.equal(f.calls.at(-1)[4].restoreLast,false);assert.equal(f.calls.at(-1)[4].damageOnly,action==='damage');
+ }
+ f.item.type='power';await executeSlot({kind:'item',ref:'w'},f.token,{shiftKey:true},f.runtime);assert.equal(f.calls.at(-1)[4].restoreLast,false);
+});
 test('Action items use the Tools action dialog rather than a chat card',async()=>{
  const f=fixture();f.item.type='action';await executeSlot({kind:'item',ref:'w',action:'attack'},f.token,null,f.runtime);assert.deepEqual(f.calls,[['action',f.actor,f.item,true]]);
 });

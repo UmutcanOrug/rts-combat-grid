@@ -36,7 +36,7 @@ globalThis.canvas={tokens:{controlled:[token]}};
 globalThis.fromUuid=async uuid=>uuid.startsWith('Macro.') ? game.macros.get(uuid.slice(6)) : items.get(uuid.split('.').pop());
 game.macros.set('M',{id:'M',name:'Fire Support',img:`${ASSETS}/coh2/artillery.webp`,canExecute:true,execute:scope=>record('Macro',scope.actor,scope.token.document.uuid)});
 game.swadetools={
- async item(actor,id,operator,options){record('Tools item',id,options.token.document.uuid,options.damageOnly);},
+ async item(actor,id,operator,options){record('Tools item',id,options.token.document.uuid,options.damageOnly,options.restoreLast);},
  skill:(actor,id)=>record('Tools skill',id),attribute:(actor,id)=>record('Tools attribute',id),run:actor=>record('Tools run')
 };
 game.swade={swadetoolsAttack:(actor,item,dialog)=>record('Tools action',item.id,dialog)};
