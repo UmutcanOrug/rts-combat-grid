@@ -32,6 +32,8 @@ Version 0.3.2 applies this default to new actors and upgrades the original 5 × 
 
 The four bottom slots start empty for grenades, consumables, macros, or any other commands. Drag actor items onto them or Shift-click to assign an entry. **Use Item** lists available gear and consumables; cards retain the system's normal use controls. The grid does not invent or automatically spend consumable quantities.
 
+**Shift + left-click a weapon** to open SWADE Tools with its last saved weapon settings, matching the inventory shortcut in the author's **SWADE Tools 2.2.4+**. This works on the three weapon loadout slots and weapons assigned elsewhere in the grid. A normal click opens the normal panel. Recall does not automatically roll or repeat an attack; confirm it in SWADE Tools. Tools owns the session-only memory for the current user, actor, token, weapon, and operator. Reloading Foundry clears it. If there are no saved settings for that context, the normal defaults appear. To edit a weapon button, use the pencil or **Right-click → Edit button**; Shift-click still edits other buttons and empty slots. Explicit Damage, Reload, and additional-action bindings keep their selected action.
+
 **Actions** is always visible in the header. It lists actor Action items, additional weapon/power actions, available Aim/Defend/Hold/Wild Attack statuses, and Support/Test and recovery roll shortcuts. **Browse Action Library** finds accessible Action items in world items and installed Item compendiums. Using a library entry explicitly adds a copy to this actor and opens it in SWADE Tools. Rules content is supplied by your installed SWADE content; this module does not bundle rulebook Action items.
 
 **Shaken** is a dedicated toggle in the lower portrait card, between Fatigue and Power Points. It shows whether Shaken is active and leaves the portrait and all four custom item slots clear. The header includes Benny controls (remove, spend/count, add) and Effects. Click the portrait to open the character sheet. Base and any custom page tabs share the header; there is no duplicate Sheet/Target toolbar or instructional footer.
@@ -104,7 +106,8 @@ Two hooks are also available:
 | Left-click a slot | Use its assigned item or command |
 | Right-click a slot | Attack/use, damage, reload, chat card, item sheet, additional item actions, or edit |
 | Pencil | Toggle edit mode; click to assign/clear; drag to swap |
-| Shift-click a slot | Edit directly |
+| Shift-click a weapon attack slot | Open SWADE Tools with the last weapon settings |
+| Shift-click another slot | Edit directly |
 | Drag from actor sheet | Assign that actor's item |
 | Drag a world macro | Assign an executable macro |
 | Gear | Appearance, grid size, pages, import/export |
@@ -130,7 +133,7 @@ Status toggles actual actor conditions. Effects enables/disables editable active
 
 ## Validation
 
-Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation, portable NPC defaults, item-ID rebinding, token-only assigned items, and GM permissions. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports. Additional checks cover SC II icons across all themes, restored SC II frames, the lower Shaken toggle, sheet-equivalent skill bonuses, separate Benny add/remove/spend behavior, selecting all entries in a long choice list, three-weapon assignment, and NPC default controls.
+Automated tests cover the Base arrangement, migration, ownership, Tools delegation, actual Action items, additional-action dialog selection, macros, movement arming, wounds, and layout validation, portable NPC defaults, item-ID rebinding, token-only assigned items, and GM permissions. Browser checks exercise all five themes, player commands, Action selection, wound segments and Extras, one-shot movement voice, editing/import/dragging, the launcher, ownership loss, and small viewports. Additional checks cover SC II icons across all themes, restored SC II frames, the lower Shaken toggle, sheet-equivalent skill bonuses, separate Benny add/remove/spend behavior, selecting all entries in a long choice list, three-weapon assignment, NPC default controls, Shift-click weapon setting recall, and continued access to weapon editing.
 
 Browser checks use a simulated Foundry/SWADE Tools host. API signatures were checked against local Foundry V13, SWADE 5.0.8, and the author's SWADE Tools 2.2.2 source. A live Foundry world is still needed to verify real dice dialogs and interaction with other enabled modules. Foundry V14 is outside this release's scope.
 
