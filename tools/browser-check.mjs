@@ -36,6 +36,16 @@ await check('all player roll buttons delegate to SWADE Tools',async()=>{
  await page.locator('[data-slot="2"]').click();await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools run'));
  await page.locator('[data-slot="9"]').click();await choose('Energy Bolt');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools item' && c.args[0]==='bolt'));
 });
+await check('Shift-click a weapon recalls Tools settings instead of opening the button editor',async()=>{
+ await page.locator('[data-slot="0"]').click({modifiers:['Shift']});await page.waitForFunction(()=>preview.calls.filter(c=>c.name==='Tools item').at(-1)?.args[3]===true);
+ assert(await page.locator('dialog').count()===0,'weapon recall did not edit');assert((await page.locator('[data-slot="0"]').getAttribute('title')).includes('Shift+click: last weapon settings'),'recall tooltip');
+ const call=await page.evaluate(()=>preview.calls.filter(c=>c.name==='Tools item').at(-1));assert(call.args[0]==='rifle' && call.args[1]==='Scene.S.Token.T' && call.args[2]===false,'same weapon and token, no damage-only mode');
+ await page.locator('[data-slot="0"]').click();await page.waitForFunction(()=>preview.calls.filter(c=>c.name==='Tools item').at(-1)?.args[3]===false);
+});
+await check('weapon editing remains accessible from the pencil and right-click menu',async()=>{
+ await page.locator('[data-ui="edit"]').click();await page.locator('[data-slot="0"]').click({modifiers:['Shift']});await page.locator('dialog select[name="kind"]').waitFor({state:'visible'});await page.locator('dialog [data-close]').click();await page.locator('[data-ui="edit"]').click();
+ await page.locator('[data-slot="0"]').click({button:'right'});await page.locator('[data-edit-slot]').click();await page.locator('dialog select[name="kind"]').waitFor({state:'visible'});await page.locator('dialog [data-close]').click();
+});
 await check('searchable choice list scrolls and selects every entry despite host select height',async()=>{
  await page.evaluate(()=>{for(let i=0;i<30;i++)preview.items.set('skill-'+i,{id:'skill-'+i,name:'Extra Skill '+i,type:'skill',isOwner:true,system:{die:{sides:6}}});});
  await page.locator('[data-slot="6"]').click();const list=page.locator('.rcg-entry-list');assert(await list.evaluate(el=>el.scrollHeight>el.clientHeight),'long list scrolls');assert(await page.locator('dialog select[size]').count()===0,'no compressed select list');await page.locator('dialog [data-search]').fill('Extra Skill 29');await choose('Extra Skill 29 · d6');await page.waitForFunction(()=>preview.calls.some(c=>c.name==='Tools skill' && c.args[0]==='skill-29'));
@@ -77,6 +87,7 @@ await check('player can drag grenades and consumables into bottom custom slots',
  for(const [index,id] of [[11,'grenade'],[12,'medkit']]){
  await page.evaluate(({index,id})=>{const data=new DataTransfer();data.setData('text/plain',JSON.stringify({type:'Item',uuid:`Actor.A.Item.${id}`}));document.querySelector(`[data-slot="${index}"]`).dispatchEvent(new DragEvent('drop',{dataTransfer:data,bubbles:true,cancelable:true}));},{index,id});await page.waitForFunction(({index,id})=>preview.actor.flags['rts-combat-grid'].grid.pages[0].slots[index]?.ref===id,{index,id});
  }
+ await page.locator('[data-slot="11"]').click({modifiers:['Shift']});await page.waitForFunction(()=>preview.calls.filter(c=>c.name==='Tools item').at(-1)?.args[0]==='grenade' && preview.calls.filter(c=>c.name==='Tools item').at(-1)?.args[3]===true);assert(await page.locator('dialog').count()===0,'custom weapon also recalls');
 });
 await check('all five themes render and retain the same compact controls',async()=>{
  for(const theme of ['coh2','sc2','ironclad','arcane','desert']){
@@ -85,7 +96,7 @@ await check('all five themes render and retain the same compact controls',async(
  }
 });
 await check('Movement voice macro triggers once on this user next moving this token',async()=>{
- await page.locator('[data-ui="edit"]').click();await page.locator('[data-slot="1"]').click();await page.locator('dialog [data-movement-field]').waitFor({state:'attached'});assert(await page.locator('dialog [data-movement-field]').isVisible(),'movement binding visible');await page.locator('dialog select[name="macro"]').selectOption('M');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});await page.locator('[data-ui="edit"]').click();
+ await page.locator('[data-slot="1"]').click({modifiers:['Shift']});await page.locator('dialog [data-movement-field]').waitFor({state:'attached'});assert(await page.locator('dialog [data-movement-field]').isVisible(),'movement binding visible');await page.locator('dialog select[name="macro"]').selectOption('M');await page.locator('dialog button[value="save"]').click();await page.waitForSelector('dialog',{state:'detached'});
  await page.locator('[data-slot="1"]').click();assert(await page.evaluate(()=>preview.calls.filter(c=>c.name==='Macro').length)===0,'no voice on click');
  await page.evaluate(()=>{preview.token.document.x=150;Hooks.callAll('updateToken',preview.token.document,{x:150},{},'other-user');});assert(await page.evaluate(()=>preview.calls.filter(c=>c.name==='Macro').length)===0,'ignore another user');
  await page.evaluate(()=>{preview.token.document.x=200;Hooks.callAll('updateToken',preview.token.document,{x:200},{},game.user.id);});await page.waitForFunction(()=>preview.calls.filter(c=>c.name==='Macro').length===1);
