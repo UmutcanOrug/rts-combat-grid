@@ -63,6 +63,10 @@ export function loadoutItem(actor, ref, config) {
   const primary=weapons.filter(item=>item !== sidearm);
   return ref === "sidearm" ? sidearm ?? primary[2] : primary[ref === "secondary" ? 1 : 0];
 }
+export function isWeaponRecallSlot(slot,actor,config) {
+  const item=slot?.kind === "loadout" ? loadoutItem(actor,slot.ref,config) : slot?.kind === "item" ? actor.items.get(slot.ref) : null;
+  return item?.type === "weapon" && (slot.action || "attack") === "attack";
+}
 export function actorActionSlots(actor) {
   const items=array(actor.items);
   return items.filter(item=>item.type === "action").map(itemSlot).concat(items.filter(item=>item.type !== "action").flatMap(item=>

@@ -1,4 +1,4 @@
-import {ID, THEMES, readConfig, normalizeConfig, insertSlot, moveSlot, itemSlot, loadoutItem, canUse, cssImage, escape as e} from "./core.mjs";
+import {ID, THEMES, readConfig, normalizeConfig, insertSlot, moveSlot, itemSlot, loadoutItem, isWeaponRecallSlot, canUse, cssImage, escape as e} from "./core.mjs";
 import {executeSlot,executeMacro,adjustWounds,itemActions} from "./actions.mjs";
 import {renderPanel} from "./view.mjs";
 import {editAppearance,editSlot,editWeaponLoadout} from "./editor.mjs";
@@ -56,8 +56,9 @@ export class CombatGrid {
   async setSlot(page,index,slot,token=this.token){if(this.token?.document.uuid !== token.document.uuid)return;await this.saveConfig(insertSlot(this.config,page,index,slot),token);}
   async activate(index,event) {
     if(!this.element || this.busy)return;
-    if(this.editing || event?.shiftKey)return this.guard(()=>editSlot(this,index));
-    const slot=this.config.pages[this.page]?.slots[index];if(!slot)return;
+    const slot=this.config.pages[this.page]?.slots[index];
+    if(this.editing || (event?.shiftKey && !isWeaponRecallSlot(slot,this.token.actor,this.config)))return this.guard(()=>editSlot(this,index));
+    if(!slot)return;
     await this.run(slot,event,this.element.querySelector(`[data-slot="${index}"]`));
   }
   async run(slot,event,button) {

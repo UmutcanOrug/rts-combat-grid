@@ -1,4 +1,4 @@
-import {escape as e, slotView, statView, woundView} from "./core.mjs";
+import {escape as e, slotView, statView, woundView, isWeaponRecallSlot} from "./core.mjs";
 const image = (src,alt="",css="") => `<img src="${e(src)}" alt="${e(alt)}" class="${css}" draggable="false">`;
 export function renderPanel(controller) {
   const {token,config,page,editing,pinned}=controller, actor=token.actor;
@@ -11,7 +11,8 @@ export function renderPanel(controller) {
     const slot=selected.slots[i], view=slotView(slot,actor,game,config.theme,config);
     if(slot?.kind === "command" && slot.ref === "movement")view.active=Boolean(controller.movement);
     if(view.empty && selected.category === "base" && i>=11){view.label="Custom Item";view.hint="Drop a grenade, consumable, or another actor item here. Shift-click to assign any command.";}
-    return `<button type="button" class="rcg-slot ${view.empty ? "empty" : ""} ${view.active ? "active" : ""} ${view.disabled ? "unavailable" : ""}" data-slot="${i}" ${slot && editing ? 'draggable="true"' : ""} aria-label="${e(view.label)}" aria-disabled="${!editing && (view.empty || view.disabled)}" title="${e(`${view.label}\n${view.hint}${editing ? "\nClick: edit · Drag: move" : "\nRight-click: actions · Shift+click: edit"}`)}">
+    const controls=editing ? "Click: edit · Drag: move" : isWeaponRecallSlot(slot,actor,config) ? "Shift+click: last weapon settings · Right-click: actions / edit" : "Right-click: actions · Shift+click: edit";
+    return `<button type="button" class="rcg-slot ${view.empty ? "empty" : ""} ${view.active ? "active" : ""} ${view.disabled ? "unavailable" : ""}" data-slot="${i}" ${slot && editing ? 'draggable="true"' : ""} aria-label="${e(view.label)}" aria-disabled="${!editing && (view.empty || view.disabled)}" title="${e(`${view.label}\n${view.hint}\n${controls}`)}">
       <span class="rcg-key">${i+1}</span><span class="rcg-glyph">${e(view.glyph)}</span>${view.icon ? image(view.icon,view.label,"rcg-slot-icon") : ""}<span class="rcg-slot-frame"></span>
       ${view.badge ? `<span class="rcg-ammo">${e(view.badge)}</span>` : ""}${config.labels && !view.empty ? `<span class="rcg-label">${e(view.label)}</span>` : ""}</button>`;
   }).join("");

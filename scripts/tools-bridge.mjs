@@ -35,6 +35,6 @@ export async function useToolsItem(item, token, action="attack", event, runtime=
       if(typeof api !== "function")throw new Error("The SWADE Tools action dialog is unavailable. Update SWADE Tools.");
       return await api(actor,item,true);
     }
-    return await tools.item(actor,item.id,null,{token,restoreLast:false,damageOnly:action === "damage"});
+    return await tools.item(actor,item.id,null,{token,restoreLast:item.type === "weapon" && action === "attack" && event?.shiftKey === true,damageOnly:action === "damage"});
   } catch(error){if(hook){runtime.Hooks.off("renderDialog",hook);clearTimeout(expiry);}throw error;}
 }
